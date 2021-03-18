@@ -1,12 +1,16 @@
 *{
-	overflow:hidden;
+	overflow:visible;
 }
 body{
 	margin:0;
-	width:100vw;
-	height:100vh;
+	overflow:auto;
+}
+.fc{
+	width:200vw;
+	height:200vh;
 }
 .cad-element{
 	position: absolute;
 	border:1px solid #000;
+	overflow:visible;
 }
