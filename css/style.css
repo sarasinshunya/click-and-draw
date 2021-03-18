@@ -1,0 +1,12 @@
+/**{
+	overflow:hidden;
+}*/
+body{
+	margin:0;
+	width:100vw;
+	height:100vh;
+}
+.cad-element{
+	position: absolute;
+	border:1px solid #000;
+}
