@@ -13,4 +13,21 @@ body{
 	position: absolute;
 	border:1px solid #000;
 	overflow:visible;
+	background:#ff0;
+}
+.ghost{
+	opacity:0.5;
+	z-index:10000;
+}
+.unselectable{
+	user-select:none;
+	-moz-user-select:none;
+	-khtml-user-select:none;
+	-webkit-user-select:none;
+	-ms-user-select:none;
+}
+.cad-menu{
+	position:absolute;
+	top:0;
+	left:0;
 }

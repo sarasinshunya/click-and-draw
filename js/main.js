@@ -1,9 +1,24 @@
-let start, end, cad, eb;
-
-
+let start, end, cad, eb, ghost, levent, srel, ebP;
 
 document.addEventListener('mousedown', CAD_CREATE_OnDown);
 document.addEventListener('mouseup', CAD_CREATE_OnUp);
+
+addClassListener('change', 'cad-menu', function(e){
+	console.log(e);
+	console.log(e.value)
+	e.parentNode.setAttribute('data-tag', e.value);
+});
+
+function cadElementInnerHTML(cadid = ""){
+	let str = `
+	<select class = "cad-menu">
+		<option value = "editable" selected>Editable</option>
+		<option value = "draggable">Draggable</option>
+	</select>
+`;
+	return str; 
+
+}
 
 function CAD_CREATE_OnDown(event){
 
@@ -11,11 +26,32 @@ function CAD_CREATE_OnDown(event){
 	eb = document.elementFromPoint(start.x - window.pageXOffset, start.y - window.pageYOffset);
 	
 	console.log(eb);
-
-	start = relativePosition(eb, start);
-
-	document.addEventListener('mousemove', CAD_CREATE_OnDrag);
+	if(eb.getAttribute('data-tag') == 'draggable'){
+		srel = relativePosition(eb, start);
+		ebP = eb.getBoundingClientRect();
+		document.addEventListener('mousemove', CAD_OnDrag);
+	} else if(eb.getAttribute('data-tag') == 'editable') {
+		start = relativePosition(eb, start);
+		document.addEventListener('mousemove', CAD_CREATE_OnDrag);
+	}
 	
+}
+function CAD_OnDrag(event){ // create ghost
+	levent = event;
+	let delta = {x : event.pageX - start.x, y : event.pageY- start.y};
+	if(!ghost){
+		eb.style.display = "none";
+		ghost = eb.cloneNode(true);
+		document.body.appendChild(ghost);
+		ghost.style.display = "block";
+		ghost.classList.add("ghost");
+		ghost.getElementsByTagName('select')[0].value="draggable";
+		ghost.style.left = (window.scrollX + ebP.left + delta.x) + 'px';
+		ghost.style.top = (window.scrollY + ebP.top + delta.y) + 'px';
+	}
+	ghost.style.left = (window.scrollX + ebP.left + delta.x) + 'px';
+	ghost.style.top = (window.scrollY + ebP.top + delta.y) + 'px';
+
 }
 function CAD_CREATE_OnDrag(event){
 
@@ -24,6 +60,7 @@ function CAD_CREATE_OnDrag(event){
 	if(!cad){
 		cad = document.createElement('div');
 		cad.classList.add('cad-element');
+		cad.setAttribute('data-tag', "editable");
 		eb.appendChild(cad);
 		cad.style.zIndex = (window.getComputedStyle(eb, null).getPropertyValue("zIndex") || 0) + 1;
 	}	
@@ -40,11 +77,32 @@ function CAD_CREATE_OnDrag(event){
 
 function CAD_CREATE_OnUp(){
 	document.removeEventListener('mousemove', CAD_CREATE_OnDrag);
+	document.removeEventListener('mousemove', CAD_OnDrag);
+	if(ghost){
+		ghost.parentNode.removeChild(ghost);
+		let elem = document.elementFromPoint(levent.pageX - window.pageXOffset, levent.pageY - window.pageYOffset);
+
+		if(elem){
+			let newchild = eb.cloneNode(true);
+			elem.appendChild(newchild);
+			
+			newchild.getElementsByTagName('select')[0].value="draggable";
+			newchild.style.display = "block";
+			newchild.style.left = (levent.pageX - srel.x - (elem.getBoundingClientRect().left + window.scrollX) ) + 'px' ;
+			newchild.style.top = (levent.pageY - srel.y - (elem.getBoundingClientRect().top + window.scrollY) ) + 'px';
+			newchild.style.zIndex = (window.getComputedStyle(eb, null).getPropertyValue("zIndex") || 0) + 1;
+		}
+		eb.parentNode.removeChild(eb);
+	} else if(cad){
+
+		cad.innerHTML = cadElementInnerHTML();
+	}
 	cad = null;
 	eb = null;
+	ghost = null;
 }
 
-function relativePosition(elem, start){
+function relativePosition(elem, start){ // with respect to parent
 	
 	return {x: start.x - elem.getBoundingClientRect().left - window.scrollX, y: start.y - elem.getBoundingClientRect().top - window.scrollY};
 }
@@ -77,4 +135,12 @@ function getNearestPoint(point, unit){
 	} else {
 		r.y = parseInt(point.y / unit) + unit;
 	}
+}
+
+function addClassListener(event, selector, doit){
+	document.addEventListener(event, function(e){
+		if(e.srcElement.classList.contains(selector)) {
+			doit(e.srcElement);
+		}
+	})
 }
