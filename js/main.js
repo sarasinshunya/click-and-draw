@@ -4,11 +4,24 @@ document.addEventListener('mousedown', CAD_CREATE_OnDown);
 document.addEventListener('mouseup', CAD_CREATE_OnUp);
 
 addClassListener('change', 'cad-menu', function(e){
-	console.log(e);
-	console.log(e.value)
+	e = e.srcElement;
 	e.parentNode.setAttribute('data-tag', e.value);
 });
-
+addTagListener('change', 'select', function(e){
+	let selectElem = e.srcElement;
+	let arr = selectElem.getElementsByTagName("option");
+	for (var i = arr.length - 1; i >= 0; i--) {
+		let sel = arr[i];
+		// console.log(sel);
+		if(sel.hasAttribute('selected')){
+			sel.removeAttribute('selected');
+		} 
+		if(sel.value == selectElem.value){
+			sel.setAttribute('selected', 'selected');
+		}
+	}
+	console.log('we are here');
+})
 function cadElementInnerHTML(cadid = ""){
 	let str = `
 	<select class = "cad-menu">
@@ -140,7 +153,15 @@ function getNearestPoint(point, unit){
 function addClassListener(event, selector, doit){
 	document.addEventListener(event, function(e){
 		if(e.srcElement.classList.contains(selector)) {
-			doit(e.srcElement);
+			doit(e);
+		}
+	})
+}
+function addTagListener(event, selector, doit){
+	document.addEventListener(event, function(e){
+		console.log(e.srcElement.tagName);
+		if(e.srcElement.tagName.toLowerCase() == selector.toLowerCase()) {
+			doit(e);
 		}
 	})
 }
