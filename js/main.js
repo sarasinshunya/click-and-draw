@@ -1,4 +1,7 @@
-let start, end, cad, eb, ghost, levent, srel, ebP;
+
+let minimumSnappingDistance = 25;
+
+let start, end, cad, eb, ghost, levent, srel, ebP, snappedTo;
 
 document.addEventListener('mousedown', CAD_CREATE_OnDown);
 document.addEventListener('mouseup', CAD_CREATE_OnUp);
@@ -50,6 +53,7 @@ function CAD_CREATE_OnDown(event){
 	
 }
 function CAD_OnDrag(event){ // create ghost
+
 	levent = event;
 	let delta = {x : event.pageX - start.x, y : event.pageY- start.y};
 	if(!ghost){
@@ -58,13 +62,49 @@ function CAD_OnDrag(event){ // create ghost
 		document.body.appendChild(ghost);
 		ghost.style.display = "block";
 		ghost.classList.add("ghost");
-		ghost.getElementsByTagName('select')[0].value="draggable";
+		// ghost.getElementsByTagName('select')[0].value="draggable";
 		ghost.style.left = (window.scrollX + ebP.left + delta.x) + 'px';
 		ghost.style.top = (window.scrollY + ebP.top + delta.y) + 'px';
 	}
 	ghost.style.left = (window.scrollX + ebP.left + delta.x) + 'px';
 	ghost.style.top = (window.scrollY + ebP.top + delta.y) + 'px';
+	
+	CAD_SnapToNearest(event);
 
+}
+function CAD_SnapToNearest(event){
+	if(snappedTo){
+		snappedTo.classList.remove('snapped-to');
+		snappedTo = null;
+	}
+	let mpoint = {x : event.pageX, y : event.pageY};
+	ghost.style.visibility = "hidden";
+	let elembelow = document.elementFromPoint(mpoint.x - window.pageXOffset, mpoint.y - window.pageYOffset);
+	while(! elembelow.classList.contains("cad-element")){
+		elembelow = elembelow.parentNode;
+	}
+	ghost.style.visibility = "visible";
+	let arr = elembelow.getElementsByClassName("cad-element");
+	let mind = 10000000;
+	let mele = elembelow;
+	for (var i = arr.length - 1; i >= 0; i--) {
+		let ex = arr[i].getBoundingClientRect().left + window.pageXOffset;
+		let ey = arr[i].getBoundingClientRect().top + window.pageYOffset;
+		let ew = arr[i].getBoundingClientRect().width;
+		let eh = arr[i].getBoundingClientRect().height;
+		let ed = distanceBoxParticle2D(mpoint.x, mpoint.y, ex, ey, ex + ew, ey + eh);
+		if(mind > ed){
+			mind = ed;
+			mele = arr[i];
+		}
+	}
+	if(mind < minimumSnappingDistance){
+		mele.classList.add('snapped-to');
+		snappedTo = mele;
+	} else {
+		elembelow.classList.add('snapped-to');
+		snappedTo = elembelow;
+	}
 }
 function CAD_CREATE_OnDrag(event){
 
@@ -94,12 +134,32 @@ function CAD_CREATE_OnUp(){
 	if(ghost){
 		ghost.parentNode.removeChild(ghost);
 		let elem = document.elementFromPoint(levent.pageX - window.pageXOffset, levent.pageY - window.pageYOffset);
-
-		if(elem){
+		
+		if(snappedTo.isSameNode(elem)){
 			let newchild = eb.cloneNode(true);
 			elem.appendChild(newchild);
 			
-			newchild.getElementsByTagName('select')[0].value="draggable";
+			newchild.style.display = "block";
+			newchild.style.left = (levent.pageX - srel.x - (elem.getBoundingClientRect().left + window.scrollX) ) + 'px' ;
+			newchild.style.top = (levent.pageY - srel.y - (elem.getBoundingClientRect().top + window.scrollY) ) + 'px';
+			newchild.style.zIndex = (window.getComputedStyle(eb, null).getPropertyValue("zIndex") || 0) + 1;
+			snappedTo.classList.remove('snapped-to');
+		} 
+		else if(snappedTo){
+			elem = snappedTo;
+			let newchild = eb.cloneNode(true);
+			elem.appendChild(newchild);
+			
+			newchild.style.display = "block";
+			newchild.style.left = '20px' ;
+			newchild.style.top = '20px';
+			newchild.style.zIndex = (window.getComputedStyle(eb, null).getPropertyValue("zIndex") || 0) + 1;
+			snappedTo.classList.remove('snapped-to');
+		}
+		else if(elem){
+			let newchild = eb.cloneNode(true);
+			elem.appendChild(newchild);
+			
 			newchild.style.display = "block";
 			newchild.style.left = (levent.pageX - srel.x - (elem.getBoundingClientRect().left + window.scrollX) ) + 'px' ;
 			newchild.style.top = (levent.pageY - srel.y - (elem.getBoundingClientRect().top + window.scrollY) ) + 'px';
@@ -113,6 +173,7 @@ function CAD_CREATE_OnUp(){
 	cad = null;
 	eb = null;
 	ghost = null;
+	snappedTo = null;
 }
 
 function relativePosition(elem, start){ // with respect to parent
@@ -148,6 +209,28 @@ function getNearestPoint(point, unit){
 	} else {
 		r.y = parseInt(point.y / unit) + unit;
 	}
+}
+
+function HYPOT(x, y){
+	return Math.sqrt(x*x + y*y);
+}
+
+function distanceBoxParticle2D( x,  y,  x_min,  y_min,
+         x_max,  y_max)
+{
+    if (x < x_min) {
+        if (y <  y_min) return HYPOT(x_min-x, y_min-y);
+        if (y <= y_max) return x_min - x;
+                        return HYPOT(x_min-x, y_max-y);
+    } else if (x <= x_max) {
+        if (y <  y_min) return y_min - y;
+        if (y <= y_max) return 0;
+                        return y - y_max;
+    } else {
+        if (y <  y_min) return HYPOT(x_max-x, y_min-y);
+        if (y <= y_max) return x - x_max;
+                        return HYPOT(x_max-x, y_max-y);
+    }
 }
 
 function addClassListener(event, selector, doit){

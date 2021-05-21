@@ -5,15 +5,16 @@ body{
 	margin:0;
 	overflow:auto;
 }
-.fc{
-	width:200vw;
-	height:200vh;
-}
 .cad-element{
 	position: absolute;
 	border:1px solid #000;
 	overflow:visible;
 	background:#ff0;
+}
+.fc{
+	width:200vw;
+	height:200vh;
+	background:#fff;
 }
 .ghost{
 	opacity:0.5;
@@ -30,4 +31,7 @@ body{
 	position:absolute;
 	top:0;
 	left:0;
+}
+.snapped-to{
+	background:blue;
 }
