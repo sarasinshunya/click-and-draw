@@ -1,7 +1,7 @@
 
-let minimumSnappingDistance = 25;
+var minimumSnappingDistance = 25;
 
-let start, end, cad, eb, ghost, levent, srel, ebP, snappedTo;
+var start, end, cad, eb, ghost, levent, srel, ebP, snappedTo;
 
 document.addEventListener('mousedown', CAD_CREATE_OnDown);
 document.addEventListener('mouseup', CAD_CREATE_OnUp);
@@ -11,10 +11,10 @@ addClassListener('change', 'cad-menu', function(e){
 	e.parentNode.setAttribute('data-tag', e.value);
 });
 addTagListener('change', 'select', function(e){
-	let selectElem = e.srcElement;
-	let arr = selectElem.getElementsByTagName("option");
+	var selectElem = e.srcElement;
+	var arr = selectElem.getElementsByTagName("option");
 	for (var i = arr.length - 1; i >= 0; i--) {
-		let sel = arr[i];
+		var sel = arr[i];
 		// console.log(sel);
 		if(sel.hasAttribute('selected')){
 			sel.removeAttribute('selected');
@@ -26,7 +26,7 @@ addTagListener('change', 'select', function(e){
 	console.log('we are here');
 })
 function cadElementInnerHTML(cadid = ""){
-	let str = `
+	var str = `
 	<select class = "cad-menu">
 		<option value = "editable" selected>Editable</option>
 		<option value = "draggable">Draggable</option>
@@ -55,7 +55,7 @@ function CAD_CREATE_OnDown(event){
 function CAD_OnDrag(event){ // create ghost
 
 	levent = event;
-	let delta = {x : event.pageX - start.x, y : event.pageY- start.y};
+	var delta = {x : event.pageX - start.x, y : event.pageY- start.y};
 	if(!ghost){
 		eb.style.display = "none";
 		ghost = eb.cloneNode(true);
@@ -77,22 +77,22 @@ function CAD_SnapToNearest(event){
 		snappedTo.classList.remove('snapped-to');
 		snappedTo = null;
 	}
-	let mpoint = {x : event.pageX, y : event.pageY};
+	var mpoint = {x : event.pageX, y : event.pageY};
 	ghost.style.visibility = "hidden";
-	let elembelow = document.elementFromPoint(mpoint.x - window.pageXOffset, mpoint.y - window.pageYOffset);
+	var elembelow = document.elementFromPoint(mpoint.x - window.pageXOffset, mpoint.y - window.pageYOffset);
 	while(! elembelow.classList.contains("cad-element")){
 		elembelow = elembelow.parentNode;
 	}
 	ghost.style.visibility = "visible";
-	let arr = elembelow.getElementsByClassName("cad-element");
-	let mind = 10000000;
-	let mele = elembelow;
+	var arr = elembelow.getElementsByClassName("cad-element");
+	var mind = 10000000;
+	var mele = elembelow;
 	for (var i = arr.length - 1; i >= 0; i--) {
-		let ex = arr[i].getBoundingClientRect().left + window.pageXOffset;
-		let ey = arr[i].getBoundingClientRect().top + window.pageYOffset;
-		let ew = arr[i].getBoundingClientRect().width;
-		let eh = arr[i].getBoundingClientRect().height;
-		let ed = distanceBoxParticle2D(mpoint.x, mpoint.y, ex, ey, ex + ew, ey + eh);
+		var ex = arr[i].getBoundingClientRect().left + window.pageXOffset;
+		var ey = arr[i].getBoundingClientRect().top + window.pageYOffset;
+		var ew = arr[i].getBoundingClientRect().width;
+		var eh = arr[i].getBoundingClientRect().height;
+		var ed = distanceBoxParticle2D(mpoint.x, mpoint.y, ex, ey, ex + ew, ey + eh);
 		if(mind > ed){
 			mind = ed;
 			mele = arr[i];
@@ -117,10 +117,10 @@ function CAD_CREATE_OnDrag(event){
 		eb.appendChild(cad);
 		cad.style.zIndex = (window.getComputedStyle(eb, null).getPropertyValue("zIndex") || 0) + 1;
 	}	
-	let x = Math.min(start.x, end.x);
-	let y = Math.min(start.y, end.y);
-	let w = Math.abs(start.x - end.x);
-	let h = Math.abs(start.y - end.y);
+	var x = Math.min(start.x, end.x);
+	var y = Math.min(start.y, end.y);
+	var w = Math.abs(start.x - end.x);
+	var h = Math.abs(start.y - end.y);
 
 	cad.style.top = y + "px";
 	cad.style.left = x + "px";
@@ -133,10 +133,10 @@ function CAD_CREATE_OnUp(){
 	document.removeEventListener('mousemove', CAD_OnDrag);
 	if(ghost){
 		ghost.parentNode.removeChild(ghost);
-		let elem = document.elementFromPoint(levent.pageX - window.pageXOffset, levent.pageY - window.pageYOffset);
+		var elem = document.elementFromPoint(levent.pageX - window.pageXOffset, levent.pageY - window.pageYOffset);
 		
 		if(snappedTo.isSameNode(elem)){
-			let newchild = eb.cloneNode(true);
+			var newchild = eb.cloneNode(true);
 			elem.appendChild(newchild);
 			
 			newchild.style.display = "block";
@@ -147,7 +147,7 @@ function CAD_CREATE_OnUp(){
 		} 
 		else if(snappedTo){
 			elem = snappedTo;
-			let newchild = eb.cloneNode(true);
+			var newchild = eb.cloneNode(true);
 			elem.appendChild(newchild);
 			
 			newchild.style.display = "block";
@@ -157,7 +157,7 @@ function CAD_CREATE_OnUp(){
 			snappedTo.classList.remove('snapped-to');
 		}
 		else if(elem){
-			let newchild = eb.cloneNode(true);
+			var newchild = eb.cloneNode(true);
 			elem.appendChild(newchild);
 			
 			newchild.style.display = "block";
@@ -198,7 +198,7 @@ function relativePosition(elem, start){ // with respect to parent
 // ok, so snap the ghost to the grid, not the actual element being dragged
 
 function getNearestPoint(point, unit){
-	let r = point;
+	var r = point;
 	if(point.x - unit * parseInt(point.x / unit) > unit/2){
 		r.x = parseInt(point.x / unit);
 	} else {

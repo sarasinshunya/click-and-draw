@@ -5,7 +5,7 @@ body{
 	margin:0;
 	overflow:auto;
 }
-.cad-element{
+.cad-element, .cad{
 	position: absolute;
 	border:1px solid #000;
 	overflow:visible;
