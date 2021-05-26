@@ -19,13 +19,8 @@ class Multiset{
 			this.pairset.insert({f:v, s:1});
 		} else {
 			var x = it.value();
-			//slow --> 
-			// 	this.pairset.remove(x);
-			// 	x.s++;
-			// 	this.pairset.insert(x);
-			//fast --> (use this only when you know the set will be sorted)
-					x.s++;
-					it.setValue(x);
+			x.s++;
+			it.setValue(x);
 		}
 	}
 	remove(v){
@@ -36,12 +31,14 @@ class Multiset{
 			//do nothing
 		} else {
 			var x = it.value();
-			this.pairset.remove(x);
+			// this one is the fast one
 			// console.log(x);
-			x.s--;
-
-			if(x.s != 0)	
-				this.pairset.insert(x);
+			if(x.s != 1){
+				x.s--;
+				it.setValue(x);
+			} else {
+				this.pairset.remove(x);
+			}
 		}
 	}
 	getNearest(v){ // left
@@ -60,6 +57,9 @@ class Multiset{
 			else 
 				return it.value().f;
 		}
+	}
+	gimmeArray(){
+		return this.pairset.map(function(x){ return x.f;});
 	}
 }
 class CADNode{
@@ -88,6 +88,7 @@ class CAD{
 				<option value = "draggable">Draggable</option>
 			</select>
 		`;
+	static borderWidth = 1;
 
 	constructor(elem, proximityQ){
 		this.root = elem; // this will be the root, only edit mode
@@ -168,9 +169,12 @@ class CAD{
 			obj.telem.setAttribute('data-tag', 'editable');
 			obj.root.appendChild(obj.telem);
 			obj.telem.style.zIndex =  (window.getComputedStyle(obj.elem, null).getPropertyValue("zIndex") || 0) + 1;
+			
 			obj.telem.id = 'cad-'+ (++obj.idCounter);
+			var telemid = obj.idCounter;
+			var parentid = obj.elem.id.substr(4); // 4 to last
 
-
+			obj.CADAsNodes.push(new CADNode(telemid, obj.CADAsNodes[parentid]));
 		}
 		var x = Math.min(start.x, end.x);
 		var y = Math.min(start.y, end.y);
@@ -183,20 +187,21 @@ class CAD{
 		obj.telem.style.height = h + "px";
 	}
 	created(event, obj){
-		if(obj.telem)
+		if(obj.telem){
 			obj.telem.innerHTML = CAD.iHTML;
+			obj.addLines(obj.telem, obj);
+		}
 		obj.resetListeners(event, obj);
 
-		obj.addLines(obj.telem, obj);
 
 		obj.telem = null;
 		obj.elem = null;
-
 	}
 
-	drag(obj){
-		// remove them all
+	drag(obj){		// remove them all
 		obj.removeLines(obj.elem, obj);
+		//we will hide every element in it's subtree
+
 
 		obj.addListener(obj.root, 'mousemove', obj.dragging, obj);
 		// obj.addListener(window, 'scroll', obj.dragging, obj);
@@ -237,10 +242,7 @@ class CAD{
 	}
 	snap(pos, obj){
 		if(obj.snapMode == 'elem-edges'){
-			//now, we need to get the lines of this element
-			//obj.elem
-
-		} else if(obj.snapMode == 'elem-vertices'){
+			obj.snapToElemEdges(obj.elem, obj);
 
 		} else if(obj.snapMode == 'grid-lines'){
 
@@ -248,8 +250,54 @@ class CAD{
 
 		}
 	}
-	snapToElemEdges(){
-		// ?? START WORKING HERE
+	snapToElemEdges(elem, obj){ //just telem, elem
+		var eLines = obj.getLines(elem); // (top, bottom, left, right)
+		
+		var distance = new Array(4);
+		var nearest = new Array(4);
+		for(var i = 0; i < 3; i++){
+			nearest[i] = obj.linesX.getNearest(eLines[i]);
+			distance[i] = Math.abs(eLines[i] - nearest[i]);
+		}
+		
+		for(var i = 3; i < 6; i++){
+			nearest[i] = obj.linesY.getNearest(eLines[i]);
+			distance[i] = Math.abs(eLines[i] - nearest[i]);
+		}
+		
+		var mindistance = CAD.LIMIT, minline = 0;
+		for (var i = 2; i >= 0; i--) {
+			if(distance[i] < mindistance){
+				mindistance = distance[i];
+				minline = i;
+			}
+		}
+		if(mindistance <= obj.pq){
+			if(minline == 0){
+				elem.style.top = (nearest[minline] - CAD.borderWidth) + 'px';
+			} else if(minline == 1){
+				elem.style.top = (nearest[minline] - elem.getBoundingClientRect().height - CAD.borderWidth) + 'px';
+			} else {
+				elem.style.top = (nearest[minline] - elem.getBoundingClientRect().height/2 - CAD.borderWidth) + 'px' ;
+			}
+		}
+		mindistance = CAD.LIMIT, minline = 2;
+		for (var i = 5; i >= 3; i--) {
+			if(distance[i] < mindistance){
+				mindistance = distance[i];
+				minline = i;
+			}
+		}
+		if(mindistance <= obj.pq){
+			if(minline == 3){
+				elem.style.left = (nearest[minline] - CAD.borderWidth) + 'px';
+			} else if(minline == 4){
+				elem.style.left = (nearest[minline] - elem.getBoundingClientRect().width  - CAD.borderWidth) + 'px';
+			} else {
+				elem.style.left = (nearest[minline] - elem.getBoundingClientRect().width/2  - CAD.borderWidth) + 'px';
+			}
+		}
+		// console.log(distance, obj.pq, mindistance);
 	}
 	dragged(event, obj){
 
@@ -258,22 +306,56 @@ class CAD{
 
 		obj.elem = null;
 	}
-
+	getLines(elem){
+		var rect = elem.getBoundingClientRect();
+		return [
+			rect.top + window.pageYOffset,
+			rect.top + window.pageYOffset + rect.height,
+			rect.top + window.pageYOffset + rect.height/2,
+			rect.left + window.pageXOffset,
+			rect.left + window.pageXOffset + rect.width,
+			rect.left + window.pageXOffset + rect.width/2
+		];
+	}
 	addLines(elem, obj){
 		var rect = elem.getBoundingClientRect();
 		obj.linesX.insert(rect.top + window.pageYOffset);
 		obj.linesX.insert(rect.top + window.pageYOffset + rect.height);
+		obj.linesX.insert(rect.top + window.pageYOffset + rect.height/2);
 		obj.linesY.insert(rect.left + window.pageXOffset);
 		obj.linesY.insert(rect.left + window.pageXOffset + rect.width);
+		obj.linesY.insert(rect.left + window.pageXOffset + rect.width/2);
+		obj.drawLines();
 	}
 	removeLines(elem, obj){
 		var rect = elem.getBoundingClientRect();
 		obj.linesX.remove(rect.top + window.pageYOffset);
 		obj.linesX.remove(rect.top + window.pageYOffset + rect.height);
+		obj.linesX.insert(rect.top + window.pageYOffset + rect.height/2);
 		obj.linesY.remove(rect.left + window.pageXOffset);
 		obj.linesY.remove(rect.left + window.pageXOffset + rect.width);
+		obj.linesY.remove(rect.left + window.pageXOffset + rect.width/2);
+		obj.drawLines();
 	}
-	
+	drawLines(){
+		var canvas = document.getElementById('drawlines');
+		var ctx = canvas.getContext('2d');
+		canvas.width = document.getElementsByClassName("fc")[0].getBoundingClientRect().width ;//+ 'px';
+		canvas.height = document.getElementsByClassName("fc")[0].getBoundingClientRect().height ;//+ 'px';
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
+		var linesX = this.linesX.gimmeArray();
+		var linesY = this.linesY.gimmeArray();
+
+		for (var i = linesX.length - 1; i >= 0; i--) {
+			ctx.moveTo(0, linesX[i]);
+			ctx.lineTo(canvas.width, linesX[i]);
+		}
+		for (var i = linesY.length - 1; i >= 0; i--) {
+			ctx.moveTo( linesY[i], 0);
+			ctx.lineTo(linesY[i], canvas.height);
+		}
+		ctx.stroke();
+	}
 	resetListeners(event, obj){
 		obj.removeAllListeners(obj);
 		obj.addListener(obj.root, 'mousedown', obj.mousedown, obj);

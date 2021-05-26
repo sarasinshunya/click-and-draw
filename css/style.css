@@ -5,6 +5,12 @@ body{
 	margin:0;
 	overflow:auto;
 }
+#drawlines{
+	position:absolute;
+	top:0;
+	left:0;
+	z-index:-1;
+}
 .cad-element, .cad{
 	position: absolute;
 	border:1px solid #000;
@@ -12,9 +18,10 @@ body{
 	background:#ff0;
 }
 .fc{
-	width:200vw;
-	height:200vh;
-	background:#fff;
+	width:100vw;
+	height:100vh;
+	box-sizing: border-box;
+	background: transparent;
 }
 .ghost{
 	opacity:0.5;
