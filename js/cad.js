@@ -1,7 +1,7 @@
 
 window.onload = function(){
 	doThisOnce();
-	var makeit = new CAD(document.getElementsByClassName('fc')[0], 25);
+	var makeit = new CAD(document.getElementsByClassName('fc')[0], 10);
 
 }
 class Multiset{
@@ -69,14 +69,16 @@ class CADNode{
 			this.id = id;
 			this.children = [];
 
-			this.parent.addChild(id);
+			this.parent.children.push(id);
 		} else {
 			this.id = id;
 			this.children = [];
 		}
 	}
-	addChild(childId){
-		this.children.push(childId);
+	makeChildOf(parent){
+		this.parent.children.splice(this.parent.children.indexOf(this.id), 1);
+		this.parent = parent;
+		parent.children.push(this.id);
 	}
 }
 class CAD{
@@ -172,7 +174,7 @@ class CAD{
 			
 			obj.telem.id = 'cad-'+ (++obj.idCounter);
 			var telemid = obj.idCounter;
-			var parentid = obj.elem.id.substr(4); // 4 to last
+			var parentid = parseInt(obj.elem.id.substr(4)); // 4 to last
 
 			obj.CADAsNodes.push(new CADNode(telemid, obj.CADAsNodes[parentid]));
 		}
@@ -192,6 +194,7 @@ class CAD{
 			obj.addLines(obj.telem, obj);
 		}
 		obj.resetListeners(event, obj);
+		console.log(obj.CADAsNodes);
 
 
 		obj.telem = null;
@@ -201,7 +204,9 @@ class CAD{
 	drag(obj){		// remove them all
 		obj.removeLines(obj.elem, obj);
 		//we will hide every element in it's subtree
+		obj.subtreeElems = [], obj.subtreeRects = [];
 
+		obj.elemsinTree(parseInt(obj.elem.id.substr(4)), obj.subtreeElems, obj.subtreeRects);
 
 		obj.addListener(obj.root, 'mousemove', obj.dragging, obj);
 		// obj.addListener(window, 'scroll', obj.dragging, obj);
@@ -228,8 +233,10 @@ class CAD{
 			wpxo: end.wpxo - start.wpxo, 
 			wpyo: end.wpyo - start.wpyo
 		};
-		obj.elem.style.top = (obj.rect.y + delta.y) + 'px';// + delta.wpxo);
-		obj.elem.style.left = (obj.rect.x + delta.x) + 'px';// + delta.wpyo);
+		for (var i = 0; i < obj.subtreeElems.length; i++) {
+			obj.subtreeElems[i].style.top = (obj.subtreeRects[i].y + delta.y) + 'px';// + delta.wpxo);
+			obj.subtreeElems[i].style.left = (obj.subtreeRects[i].x + delta.x) + 'px';// + delta.wpyo);
+		}
 		
 		var pos = {
 			x : obj.rect.x + delta.x, 
@@ -272,13 +279,14 @@ class CAD{
 				minline = i;
 			}
 		}
+		var delta = {};
 		if(mindistance <= obj.pq){
 			if(minline == 0){
-				elem.style.top = (nearest[minline] - CAD.borderWidth) + 'px';
+				delta.y = (nearest[minline] - CAD.borderWidth) ;
 			} else if(minline == 1){
-				elem.style.top = (nearest[minline] - elem.getBoundingClientRect().height - CAD.borderWidth) + 'px';
+				delta.y = (nearest[minline] - elem.getBoundingClientRect().height - CAD.borderWidth);
 			} else {
-				elem.style.top = (nearest[minline] - elem.getBoundingClientRect().height/2 - CAD.borderWidth) + 'px' ;
+				delta.y = (nearest[minline] - elem.getBoundingClientRect().height/2 - CAD.borderWidth);
 			}
 		}
 		mindistance = CAD.LIMIT, minline = 2;
@@ -290,22 +298,38 @@ class CAD{
 		}
 		if(mindistance <= obj.pq){
 			if(minline == 3){
-				elem.style.left = (nearest[minline] - CAD.borderWidth) + 'px';
+				delta.x = (nearest[minline] - CAD.borderWidth);
 			} else if(minline == 4){
-				elem.style.left = (nearest[minline] - elem.getBoundingClientRect().width  - CAD.borderWidth) + 'px';
+				delta.x = (nearest[minline] - elem.getBoundingClientRect().width  - CAD.borderWidth);
 			} else {
-				elem.style.left = (nearest[minline] - elem.getBoundingClientRect().width/2  - CAD.borderWidth) + 'px';
+				delta.x = (nearest[minline] - elem.getBoundingClientRect().width/2  - CAD.borderWidth);
 			}
+		}
+		delta.y -= (elem.getBoundingClientRect().top + window.pageYOffset);
+		delta.x -= (elem.getBoundingClientRect().left+ window.pageXOffset);
+		for (var i = 0; i < obj.subtreeElems.length; i++) {
+			obj.subtreeElems[i].style.top = (obj.subtreeElems[i].getBoundingClientRect().top + window.pageYOffset + delta.y) + 'px';// + delta.wpxo);
+			obj.subtreeElems[i].style.left = (obj.subtreeElems[i].getBoundingClientRect().left + window.pageXOffset + delta.x) + 'px';// + delta.wpyo);
 		}
 		// console.log(distance, obj.pq, mindistance);
 	}
 	dragged(event, obj){
+		obj.elem.style.visibility = "hidden";
+		var eb = document.elementFromPoint(event.clientX, event.clientY);
+		obj.elem.style.visibility = "visible";
+
+		var ebid = parseInt(eb.id.substr(4));
+		var elid = parseInt(obj.elem.id.substr(4));
+
+		obj.CADAsNodes[elid].makeChildOf(obj.CADAsNodes[ebid]);
 
 		obj.addLines(obj.elem, obj);
 		obj.resetListeners(event, obj);
+		console.log(obj.CADAsNodes);
 
 		obj.elem = null;
 	}
+
 	getLines(elem){
 		var rect = elem.getBoundingClientRect();
 		return [
@@ -331,7 +355,7 @@ class CAD{
 		var rect = elem.getBoundingClientRect();
 		obj.linesX.remove(rect.top + window.pageYOffset);
 		obj.linesX.remove(rect.top + window.pageYOffset + rect.height);
-		obj.linesX.insert(rect.top + window.pageYOffset + rect.height/2);
+		obj.linesX.remove(rect.top + window.pageYOffset + rect.height/2);
 		obj.linesY.remove(rect.left + window.pageXOffset);
 		obj.linesY.remove(rect.left + window.pageXOffset + rect.width);
 		obj.linesY.remove(rect.left + window.pageXOffset + rect.width/2);
@@ -373,6 +397,23 @@ class CAD{
 			obj.listeners[i].domElement.removeEventListener(obj.listeners[i].events, obj.listeners[i].func);
 		}
 		obj.listeners = [];
+	}
+
+	elemsinTree(nodeId, response = [], rect = []){
+		var re = document.getElementById('cad-'+nodeId).getBoundingClientRect();
+		var rec = {
+			x : re.left + window.pageXOffset, 
+			y : re.top + window.pageYOffset, 
+			w : re.width, 
+			h : re.height
+		};
+		
+		response.push(document.getElementById('cad-'+nodeId)); //nodeId is basically a CADNode id
+		rect.push(rec);
+
+		for (var i = 0; i < this.CADAsNodes[nodeId].children.length; i++) {
+			this.elemsinTree(this.CADAsNodes[nodeId].children[i], response, rect);
+		}
 	}
 }
 
