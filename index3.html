@@ -1,13 +1,18 @@
 <!doctype html>
 <html>
-	<head>
-		<title>Click And Draw</title>
-		<link rel="stylesheet" href="css/style.css" >
-	</head>
-	<body class="unselectable">
-		<svg width="400" height="100">
-		  <rect width="400" height="100" style="fill:rgb(0,0,255);stroke-width:10;stroke:rgb(0,0,0)" />
-		</svg>
-
-	</body>
+   <head>
+      <title>Click And Draw</title>
+      <link rel="stylesheet" href="css/style.css" >
+   </head>
+   <body class="unselectable">
+      <canvas id="drawlines"></canvas>
+      <div class="fc" data-tag="editable"></div>
+      <script src="js/sorted-set.js"></script>
+      <script src="js/cad.js"></script>
+      <script src="../actionSpace/function/operate.js"></script>
+      <script src="../actionSpace/function/actionEntity.js"></script>
+      <script src="../actionSpace/function/actionEvent.js"></script>
+      <script src="../actionSpace/function/actionEngine.js"></script>
+      
+   </body>
 </html>

@@ -5,7 +5,7 @@ window.onload = function(){
 
 }
 class Multiset{
-	constructor(){
+	constructor(){ 
 		this.pairset = new SortedSet({ allowSetValue:true, comparator : function(a, b){
 			if(a.f == b.f) return a.s - b.s;
 			return a.f - b.f;
