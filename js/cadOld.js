@@ -1,7 +1,7 @@
 
 window.onload = function(){
 	doThisOnce();
-	var makeit = new CAD(document.getElementsByClassName('fc')[0], 10);
+	var makeit = new CAD(document.getElementsByClassName('fc')[0], 15);
 
 }
 class Multiset{
@@ -183,8 +183,8 @@ class CAD{
 		var w = Math.abs(start.x - end.x);
 		var h = Math.abs(start.y - end.y);
 
-		obj.telem.style.top = y + "px";
-		obj.telem.style.left = x + "px";
+		obj.telem.style.top = (y - obj.root.getBoundingClientRect().top) + "px";
+		obj.telem.style.left = (x - obj.root.getBoundingClientRect().left) + "px";
 		obj.telem.style.width = w + "px";
 		obj.telem.style.height = h + "px";
 	}
@@ -234,8 +234,8 @@ class CAD{
 			wpyo: end.wpyo - start.wpyo
 		};
 		for (var i = 0; i < obj.subtreeElems.length; i++) {
-			obj.subtreeElems[i].style.top = (obj.subtreeRects[i].y + delta.y) + 'px';// + delta.wpxo);
-			obj.subtreeElems[i].style.left = (obj.subtreeRects[i].x + delta.x) + 'px';// + delta.wpyo);
+			obj.subtreeElems[i].style.top = (obj.subtreeRects[i].y + delta.y - obj.root.getBoundingClientRect().top) + 'px';// + delta.wpxo);
+			obj.subtreeElems[i].style.left = (obj.subtreeRects[i].x + delta.x - obj.root.getBoundingClientRect().left) + 'px';// + delta.wpyo);
 		}
 		
 		var pos = {
@@ -308,8 +308,8 @@ class CAD{
 		delta.y -= (elem.getBoundingClientRect().top + window.pageYOffset);
 		delta.x -= (elem.getBoundingClientRect().left+ window.pageXOffset);
 		for (var i = 0; i < obj.subtreeElems.length; i++) {
-			obj.subtreeElems[i].style.top = (obj.subtreeElems[i].getBoundingClientRect().top + window.pageYOffset + delta.y) + 'px';// + delta.wpxo);
-			obj.subtreeElems[i].style.left = (obj.subtreeElems[i].getBoundingClientRect().left + window.pageXOffset + delta.x) + 'px';// + delta.wpyo);
+			obj.subtreeElems[i].style.top = (obj.subtreeElems[i].getBoundingClientRect().top + window.pageYOffset + delta.y  - obj.root.getBoundingClientRect().top) + 'px';// + delta.wpxo);
+			obj.subtreeElems[i].style.left = (obj.subtreeElems[i].getBoundingClientRect().left + window.pageXOffset + delta.x - obj.root.getBoundingClientRect().left) + 'px';// + delta.wpyo);
 		}
 		// console.log(distance, obj.pq, mindistance);
 	}
@@ -349,7 +349,7 @@ class CAD{
 		obj.linesY.insert(rect.left + window.pageXOffset);
 		obj.linesY.insert(rect.left + window.pageXOffset + rect.width);
 		obj.linesY.insert(rect.left + window.pageXOffset + rect.width/2);
-		obj.drawLines();
+		obj.drawLines(obj);
 	}
 	removeLines(elem, obj){
 		var rect = elem.getBoundingClientRect();
@@ -359,9 +359,9 @@ class CAD{
 		obj.linesY.remove(rect.left + window.pageXOffset);
 		obj.linesY.remove(rect.left + window.pageXOffset + rect.width);
 		obj.linesY.remove(rect.left + window.pageXOffset + rect.width/2);
-		obj.drawLines();
+		obj.drawLines(obj);
 	}
-	drawLines(){
+	drawLines(obj){
 		var canvas = document.getElementById('drawlines');
 		var ctx = canvas.getContext('2d');
 		canvas.width = document.getElementsByClassName("fc")[0].getBoundingClientRect().width ;//+ 'px';
@@ -371,12 +371,12 @@ class CAD{
 		var linesY = this.linesY.gimmeArray();
 
 		for (var i = linesX.length - 1; i >= 0; i--) {
-			ctx.moveTo(0, linesX[i]);
-			ctx.lineTo(canvas.width, linesX[i]);
+			ctx.moveTo(0, linesX[i]-obj.root.getBoundingClientRect().top);
+			ctx.lineTo(canvas.width, linesX[i]-obj.root.getBoundingClientRect().top);
 		}
 		for (var i = linesY.length - 1; i >= 0; i--) {
-			ctx.moveTo( linesY[i], 0);
-			ctx.lineTo(linesY[i], canvas.height);
+			ctx.moveTo(linesY[i]-obj.root.getBoundingClientRect().left, 0);
+			ctx.lineTo(linesY[i]-obj.root.getBoundingClientRect().left, canvas.height);
 		}
 		ctx.stroke();
 	}

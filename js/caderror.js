@@ -80,11 +80,11 @@ var createElem = {
 var CADGetId = [ // (obj, elem)
    {
       condition: '$!l.elem',
-      // callback:{
-      //    objectModel:'console',
-      //    method:'log',
-      //    arguments:['$l.obj.idCounter']
-      // },
+      callback:{
+         objectModel:'console',
+         method:'log',
+         arguments:['$l.obj.idCounter']
+      },
       return:'$ (++ l.obj.idCounter)'
    }, 
    {
@@ -96,6 +96,11 @@ var CADGetId = [ // (obj, elem)
       method:'substr',
       arguments:4,
       response:'cadid2',
+      // callback:{
+      //    objectModel:'console',
+      //    method:'log',
+      //    arguments: ['CADGetId[1]', '$l.cadid2']
+      // },
       return:'$l.cadid2'
    }
 ]
@@ -175,7 +180,7 @@ var CAD = { // constructor(elem:HTMLObject, proximityQ:number)
       addLines:'CADAddLines',
       removeLines:'CADRemoveLines',
       drawLines: 'CADDrawLines',           //baad mein
-      elemsinTree:'CADElemsinTree',
+
       resetListeners:'CADResetListeners'
    },
    callback: [ //properties which require some function call
@@ -260,9 +265,6 @@ var CADMouseDown = { //(event:Event, obj:obj)
                elem:'$l.eb'
             }
          },
-         objectModel:'console',
-         method:'log',
-         arguments:'$l.obj.elem',
          callback:{
             objectModel:'$l.obj.elem',
             method:'getBoundingClientRect',
@@ -292,19 +294,15 @@ var CADMouseDown = { //(event:Event, obj:obj)
                      },
                      objectModel:'engine',
                      method:'processRequest',
-                     arguments: ['$l.obj.create', '$l.args', true],
+                     arguments: ['$l.obj.create', '$l.args', true]
                   },
-                  {
-                     condition:'$(l.ebga == "draggable")',
-                     declare:{
-                        args44:{
-                           obj: '$l.obj'
-                        }
-                     },
-                     objectModel:'engine',
-                     method:'processRequest',
-                     arguments: ['$l.obj.drag', '$l.args44', true],
-                  }
+                  // {
+                  //    condition:'$(l.ebga == "draggable")',
+                  //    objectModel:'$l.obj',
+                  //    method:'drag',
+                  //    arguments: '$l.obj'
+                  // }
+
                ]
             }
          }
@@ -393,7 +391,7 @@ var CADCreating = {//(event, obj)
                },
                objectModel:'engine',
                method:'processRequest',
-               arguments:['CADGetId', '$l.args', true],
+               arguments:['CADGetId', '$l.args'],
                response:'cadid',
                callback:{
                   objectModel:'engine',
@@ -404,7 +402,7 @@ var CADCreating = {//(event, obj)
                         obj:'$l.obj'
                      }
                   },
-                  arguments:['CADGetId', '$l.args1', true],
+                  arguments:['CADGetId', '$l.args1'],
                   response:'pcadid',
                   callback:{
                      declare:{
@@ -429,7 +427,7 @@ var CADCreating = {//(event, obj)
                         callback:{
                            objectModel:'console',
                            method:'log',
-                           arguments:["Pushed to cadas nodes" ,'$l.CADAsNodes', "with", "$l.nodething"]
+                           arguments:["Pushed to cadas nodes" ,'$l.CADAsNodes', "with", "$l.args2"]
                         },
                         passStates:false
                      },
@@ -525,63 +523,57 @@ var CADResetListeners = [ //(event, obj)
       arguments:['$l.obj.root', 'mouseup'],
    }
 ]
-var CADDrag = {
-   callback:[ //obj
-      {
-         objectModel:'console',
-         method:'log',
-         arguments:['hello, ', '$l.obj.elem' ]
-      },
-      {
-         declare:{
-            obj:{
-               subtreeElems:[],
-               subtreeRects:[]
-            }
+var CADDrag = [ //obj
+   {
+      declare:{
+         args6:{
+            elem:'$l.obj.elem',
+            obj:'$l.obj'
          },
-         // objectModel:'engine',
-         // method:'processRequest',
-         // arguments:['$l.obj.removeLines', '$l.args6', true]
+         obj:{
+            subtreeElems:[],
+            subtreeRects:[]
+         }
       },
-      {
+      objectModel:'engine',
+      method:'processRequest',
+      arguments:['$l.obj.removeLines', '$l.args6', true]
+   },
+   {
+      declare:{
+         args7:{
+            elem:'$l.obj.elem'
+         }
+      },
+      objectModel:'engine',
+      method:'processRequest',
+      arguments:['CADGetId','$l.args7'],
+      response:'cadid',
+      callback:{
          declare:{
-            args7:{
-               obj:'$l.obj',
-               elem:'$l.obj.elem'
+            args8:{
+               nodeId: '$l.cadid[1]',
+               response: '$l.obj.subtreeElems',
+               rect: '$l.subtreeRects',
             }
          },
          objectModel:'engine',
          method:'processRequest',
-         arguments:['CADGetId','$l.args7', true],
-         response:'cadidp',
-         callback:{
-            declare:{
-               args8:{
-                  nodeId: '$l.cadidp[1]',
-                  response: '$l.obj.subtreeElems',
-                  rect: '$l.obj.subtreeRects',
-                  obj:'$l.obj'
-               }
-            },
-            objectModel:'engine',
-            method:'processRequest',
-            arguments:['$l.obj.elemsinTree', '$l.args8', true]
-         }
-      },
-      {
-         objectModel:'eventManager',
-         method:'addRequestListener',
-         arguments:['$l.obj.root', 'mousemove', '$l.obj.dragging', '$l.obj']
-      },
-      {
-         objectModel:'eventManager',
-         method:'addRequestListener',
-         arguments:['$l.obj.root', 'mouseup', '$l.obj.dragged', '$l.obj']
+         arguments:['$l.obj.elemsinTree', '$l.args8']
       }
-   ]
-};
+   },
+   {
+      objectModel:'eventManager',
+      method:'addRequestListener',
+      arguments:['$l.obj.root', 'mousemove', '$l.obj.dragging', '$l.obj']
+   },
+   {
+      objectModel:'eventManager',
+      method:'addRequestListener',
+      arguments:['$l.obj.root', 'mouseup', '$l.obj.dragged', '$l.obj']
+   }
+]
 var CADDragging = { //(event, obj)
-
    declare:{
       start:'$l.obj.start',
       end:{
@@ -591,7 +583,7 @@ var CADDragging = { //(event, obj)
          wpyo: '$window.pageYOffset'
       },
       delta:{
-         x:'$l.end.x - l.start.x',
+         x:'$l.end.x - l.start.y',
          y:'$l.end.y - l.start.y',
          wpxo: '$l.end.wpxo - l.start.wpxo',
          wpyo: '$l.end.wpyo - l.start.wpyo'
@@ -604,276 +596,38 @@ var CADDragging = { //(event, obj)
          h : '$l.obj.rect.h'
       }
    },
-   // objectModel:'console',
-   // method:'log',
-   // arguments:'we are here!',  
    callback:[
-      {
-         objectModel:'$l.obj.root',
-         method:'getBoundingClientRect',
-         response:'recta'
-      },
-      // {
-      //    objectModel:'console',
-      //    method:'log',
-      //    arguments:['$l.recta']
-      // },
       {
          loop:'$l.obj.subtreeElems.length',
          declare:{
             i : '$l.i + 1',
-            tmp:'$l.obj.subtreeElems[l.i]',
-            
-            
-         },
-         callback:{
-            declare:{
-               tmp:{
-                  style:{
-                     top: '$(l.obj.subtreeRects[l.i].y + l.delta.y - l.recta.top - window.pageYOffset) + "px"',
-                     left: '$(l.obj.subtreeRects[l.i].x + l.delta.x - l.recta.left - window.pageXOffset) + "px"',
-                     width: '$(l.obj.subtreeRects[l.i].w) + "px"',
-                     height: '$(l.obj.subtreeRects[l.i].h) + "px"',
-                  }
-               }
-            },
-            // objectModel:'console',
-            // method:'log',
-            // arguments:['$l.tmp']
-         }
-      }
-   ]
-}
-var CADDragged = {
-   callback:[
-      {
-         objectModel:'$l.obj.elem',
-         method:"getBoundingClientRect",
-         response:'recta'
-      },
-      {
-         objectModel:'$l.obj.root',
-         method:"getBoundingClientRect",
-         response:'roct'
-      },
-      {
-         declare:{
             obj:{
-               elem:{
-                  style:{
-                     visibility:'hidden'
+               subtreeElems:{
+                  '$l.i':{
+                     style:{
+                        top: '$(l.obj.subtreeRects[l.i].y + l.delta.y) + "px"',
+                        left: '$(l.obj.subtreeRects[l.i].x + l.delta.x) + "px"',
+                     }
                   }
                }
             }
-         },
-         extends:'elemByPoint',
-         arguments:['$l.event.clientX', '$l.event.clientY'],
-         response:'eb',
-         callback:[
-            {
-               declare:{
-                  obj:{
-                     elem:{
-                        style:{
-                           visibility:'visible',
-                           top:'$(l.recta.top - l.roct.top) + "px"',
-                           left:'$(l.recta.left - l.roct.left) + "px"',
-                           width:'$l.recta.width + "px"',
-                           height:'$l.recta.height + "px"'
-                        }
-                     }
-                  }
-               },
-               // callback:{
-               //    objectModel:'console',
-               //    method:'log',
-               //    arguments:'$l'
-               // }
-            },
-            {
-               declare:{
-                  args90:{
-                     elem:'$l.eb',
-                     obj:'$l.obj'
-                  },
-                  args91:{
-                     elem:'$l.obj.elem',
-                     obj:'$l.obj'
-                  }
-               },
-               callback:[
-                  {
-                     objectModel:'engine',
-                     method:'processRequest',
-                     arguments:['CADGetId', '$l.args90', true],
-                     response:'ebid'
-                  },
-                  {
-                     objectModel:'engine',
-                     method:'processRequest',
-                     arguments:['CADGetId', '$l.args91', true],
-                     response:'elid'
-                  },
-                  // {
-                  //    objectModel:'engine',
-                  //    method:'processRequest',
-                  //    arguments:['$l.obj.addLines', '$l.args91', true]
-                  // },
-                  {
-                     declare:{
-                        args98:{
-                           event:'$l.event',
-                           obj:'$l.obj'
-                        }
-                     },
-                     objectModel:'engine',
-                     method:'processRequest',
-                     arguments:['$l.obj.resetListeners', '$l.args98', true]
-                  },
-                  {
-                     declare:{
-                        obj:{
-                           elem:null
-                        }
-                     }
-                  }
-               ]
-            }
-         ]
-      }
-   ]
-};
-var CADElemsinTree = { //(nodeId, response, rect, obj)
-   extends:'elemById',
-   arguments:['$"cad-"+l.nodeId'],
-   response:'elem',
-   callback:[
-      // {
-      //    objectModel:'console',
-      //    method:'log',
-      //    arguments:['$l.elem']
-      // },
-      {
-         objectModel:'$l.elem',
-         method:'getBoundingClientRect',
-         response:'re'
-      },
-      {
-         declare:{
-            rec:{
-               x: '$l.re.left + window.pageXOffset',
-               y: '$l.re.top + window.pageYOffset',
-               w: '$l.re.width',
-               h: '$l.re.height'
-            }
-         },
-         /////////////////HEWRERERRERER
-         extends:'elemById',
-         arguments:['$"cad-"+l.nodeId'],
-         response:'elem2',
-         callback:[
-            {
-               objectModel:'$l.response',
-               method:'push',
-               arguments:'$l.elem2'
-            },
-            {
-               objectModel:'$l.rect',
-               method:'push',
-               arguments:'$l.rec'
-            }
-         ]
-      },
-      {
-         declare:{
-            i : -1,
-         },
-         callback:{
-            loop:'$l.obj.CADAsNodes[l.nodeId].children.length',
-            declare:{
-               i:'$l.i+1',
-               args76:{
-                  nodeId:'$l.obj.CADAsNodes[l.nodeId].children[l.i]', 
-                  response: '$l.response',
-                  rect: '$l.rect',
-                  obj:'$l.obj'
-               }
-            },
-            objectModel:'engine',
-            method:'processRequest',
-            arguments:['$l.obj.elemsinTree', '$l.args76', true]
          }
-      },{
-         // callback:{
-         //    objectModel:'console',
-         //    method:'log',
-         //    arguments:['$l.response']
-         // }
+      },
+      {
+         declare:{
+            args9:{
+               pos : '$l.pos',
+               obj : '$l.obj'
+            }
+         },
+         objectModel:'engine',
+         method:'processRequest',
+         arguments:['$l.obj.snap', '$l.args9']
       }
    ]
 }
 
 window.onload = function(){
-   doThisOnce();
+   //doThisOnce();
    var cad = engine.processRequest('CAD', {elem:document.getElementsByClassName('fc')[0], proximityQ:10});
-}
-
-function addClassListener(event, selector, doit){
-   document.addEventListener(event, function(e){
-      if(e.srcElement.classList.contains(selector)) {
-         doit(e);
-      }
-   })
-}
-function addTagListener(event, selector, doit){
-   document.addEventListener(event, function(e){
-      // console.log(e.srcElement.tagName);
-      if(e.srcElement.tagName.toLowerCase() == selector.toLowerCase()) {
-         doit(e);
-      }
-   })
-};
-
-function doThisOnce(){
-   addClassListener('change', 'cad-menu', function(e){
-      e = e.srcElement;
-      e.parentNode.setAttribute('data-tag', e.value);
-   });
-   addTagListener('change', 'select', function(e){
-      var selectElem = e.srcElement;
-      var arr = selectElem.getElementsByTagName("option");
-      for (var i = arr.length - 1; i >= 0; i--) {
-         var sel = arr[i];
-         // console.log(sel);
-         if(sel.hasAttribute('selected')){
-            sel.removeAttribute('selected');
-         } 
-         if(sel.value == selectElem.value){
-            sel.setAttribute('selected', 'selected');
-         }
-      }
-      // console.log('we are here');
-   });
-}
-
-function doThisOnce(){
-   addClassListener('change', 'cad-menu', function(e){
-      e = e.srcElement;
-      e.parentNode.setAttribute('data-tag', e.value);
-   });
-   addTagListener('change', 'select', function(e){
-      var selectElem = e.srcElement;
-      var arr = selectElem.getElementsByTagName("option");
-      for (var i = arr.length - 1; i >= 0; i--) {
-         var sel = arr[i];
-         // console.log(sel);
-         if(sel.hasAttribute('selected')){
-            sel.removeAttribute('selected');
-         } 
-         if(sel.value == selectElem.value){
-            sel.setAttribute('selected', 'selected');
-         }
-      }
-      // console.log('we are here');
-   });
 }
