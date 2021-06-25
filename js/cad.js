@@ -110,9 +110,7 @@ var CADNodeMakeChildOf = { //{obj:CADNode(this), parent:CADNode}
       arguments:['$l.childrenindex', 1],
       callback:{
          declare: {
-            obj:{
-               parent:'$l.parent'
-            }
+            'obj.parent':'$l.parent'
          },
          callback:{
             objectModel:'$l.parent.children',
@@ -134,11 +132,11 @@ var CADNode = { //(id:number, parent:CADNode)
       objectModel:'$l.parent.children',
       method:'push',
       arguments:'$l.id',
-      callback:{
-         objectModel:'console',
-         method:'log',
-         arguments:['Created node  with ', '$l']
-      }
+      // callback:{
+      //    objectModel:'console',
+      //    method:'log',
+      //    arguments:['Created node  with ', '$l']
+      // }
    },
    return: '$l' 
 }
@@ -181,9 +179,7 @@ var CAD = { // constructor(elem:HTMLObject, proximityQ:number)
    callback: [ //properties which require some function call
       {
          declare:{
-            root:{
-               id:'cad-0'
-            }
+            'root.id':'cad-0'
          },
          objectModel:'$l.root.classList',
          method:'add',
@@ -240,13 +236,12 @@ var CAD = { // constructor(elem:HTMLObject, proximityQ:number)
 }
 var CADMouseDown = { //(event:Event, obj:obj)
    declare :{
-      obj:{
-         start:{
-            x: '$l.event.pageX',
-            y: '$l.event.pageY',
-            wpxo: '$window.pageXOffset',
-            wpyo: '$window.pageYOffset'
-         }
+      'obj.start':{
+         x: '$l.event.pageX',
+         y: '$l.event.pageY',
+         wpxo: '$window.pageXOffset',
+         wpyo: '$window.pageYOffset'
+   
       },
       start : '$l.obj.start'
    },
@@ -256,26 +251,22 @@ var CADMouseDown = { //(event:Event, obj:obj)
       response:'eb',
       callback:{
          declare:{
-            obj:{
-               elem:'$l.eb'
-            }
+            'obj.elem':'$l.eb' //I WAS WORKING HERE
          },
-         objectModel:'console',
-         method:'log',
-         arguments:'$l.obj.elem',
+         // objectModel:'console',
+         // method:'log',
+         // arguments:'$l.obj.elem',
          callback:{
             objectModel:'$l.obj.elem',
             method:'getBoundingClientRect',
             response:'rect',
             callback:{
                declare:{
-                  obj:{
-                     rect:{
-                        x : '$l.rect.left + window.pageXOffset', 
-                        y : '$l.rect.top + window.pageYOffset', 
-                        w : '$l.rect.width', 
-                        h : '$l.rect.height'
-                     }
+                  'obj.rect':{
+                     x : '$l.rect.left + window.pageXOffset', 
+                     y : '$l.rect.top + window.pageYOffset', 
+                     w : '$l.rect.width', 
+                     h : '$l.rect.height'
                   }
                },
                objectModel:'$l.eb',
@@ -349,9 +340,7 @@ var CADCreating = {//(event, obj)
                //appending element here
                arguments:'$l.telem',   
                declare:{
-                  obj:{
-                     telem: '$l.telem'
-                  }
+                  'obj.telem':'$l.telem'
                },
                // callback:{
                //    objectModel:'console',
@@ -371,13 +360,7 @@ var CADCreating = {//(event, obj)
             }, 
             {
                declare:{
-                  obj:{
-                     telem:{
-                        style:{
-                           zIndex: '$ (l.obj.elem.style.zIndex || 0) + 1'
-                        }
-                     }
-                  }
+                  'obj.telem.style.zIndex': '$ (l.obj.elem.style.zIndex || 0) + 1'
                },
                // callback:{
                //    objectModel:'console',
@@ -412,11 +395,7 @@ var CADCreating = {//(event, obj)
                            id:'$l.cadid[0]',
                            parent:'$l.obj.CADAsNodes[l.pcadid[1]]'
                         },
-                        obj:{
-                           telem:{
-                              id:'$"cad-" + l.cadid[0]'
-                           }
-                        }
+                        'obj.telem.id':'$"cad-" + l.cadid[0]'
                      },
                      objectModel:'engine',
                      method:'processRequest',
@@ -426,11 +405,11 @@ var CADCreating = {//(event, obj)
                         objectModel:'$l.CADAsNodes',
                         method:'push',
                         arguments: '$l.nodething',
-                        callback:{
-                           objectModel:'console',
-                           method:'log',
-                           arguments:["Pushed to cadas nodes" ,'$l.CADAsNodes', "with", "$l.nodething"]
-                        },
+                        // callback:{
+                        //    objectModel:'console',
+                        //    method:'log',
+                        //    arguments:["Pushed to cadas nodes" ,'$l.CADAsNodes', "with", "$l.nodething"]
+                        // },
                         passStates:false
                      },
                      passStates:false
@@ -453,16 +432,10 @@ var CADCreating = {//(event, obj)
          response:'rect6',
          callback:{
             declare:{
-               obj:{
-                  telem:{
-                     style:{
-                        top: '$(l.y - l.rect6.top - window.pageYOffset) + "px"',
-                        left: '$(l.x - l.rect6.left - window.pageXOffset) + "px"',
-                        width: '$l.w + "px"',
-                        height: '$l.h + "px"'
-                     }
-                  }
-               }
+               'obj.telem.style.top': '$(l.y - l.rect6.top - window.pageYOffset) + "px"',
+               'obj.telem.style.left': '$(l.x - l.rect6.left - window.pageXOffset) + "px"',
+               'obj.telem.style.width': '$l.w + "px"',
+               'obj.telem.style.height': '$l.h + "px"'
             }
          }
       }
@@ -472,11 +445,7 @@ var CADCreated = [ //(event, obj)
    {
       condition:'$l.obj.telem',
       declare:{
-         obj:{
-            telem:{
-               innerHTML:'$CADIhtml'
-            }
-         },
+         'obj.telem.innerHTML':'$CADIhtml',
          args4:{
             elem : '$l.obj.root',
             obj : '$l.obj'
@@ -494,9 +463,9 @@ var CADCreated = [ //(event, obj)
          }
       },
       // callback:{
-         objectModel:'console',
-         method:'log',
-         arguments:'$l.args1',
+         // objectModel:'console',
+         // method:'log',
+         // arguments:'$l.args1',
       // }
       callback:{
          objectModel:'engine',
@@ -504,10 +473,8 @@ var CADCreated = [ //(event, obj)
          arguments:['$l.obj.resetListeners', '$l.args1', true],
          callback:{
             declare:{
-               obj:{
-                  telem:null,
-                  elem:null
-               }
+               'obj.telem':null,
+               'obj.elem':null
             }
          }
       }
@@ -528,16 +495,10 @@ var CADResetListeners = [ //(event, obj)
 var CADDrag = {
    callback:[ //obj
       {
-         objectModel:'console',
-         method:'log',
-         arguments:['hello, ', '$l.obj.elem' ]
-      },
-      {
          declare:{
-            obj:{
-               subtreeElems:[],
-               subtreeRects:[]
-            }
+            'obj.elem.style.zIndex':1000000,
+            'obj.subtreeElems':[],
+            'obj.subtreeRects':[]
          },
          // objectModel:'engine',
          // method:'processRequest',
@@ -565,7 +526,12 @@ var CADDrag = {
             },
             objectModel:'engine',
             method:'processRequest',
-            arguments:['$l.obj.elemsinTree', '$l.args8', true]
+            arguments:['$l.obj.elemsinTree', '$l.args8', true],
+            // callback:{
+            //    objectModel:'console',
+            //    method:'log',
+            //    arguments:['$l.obj.subtreeElems']
+            // }
          }
       },
       {
@@ -622,29 +588,25 @@ var CADDragging = { //(event, obj)
          loop:'$l.obj.subtreeElems.length',
          declare:{
             i : '$l.i + 1',
-            tmp:'$l.obj.subtreeElems[l.i]',
-            
-            
-         },
-         callback:{
-            declare:{
-               tmp:{
-                  style:{
-                     top: '$(l.obj.subtreeRects[l.i].y + l.delta.y - l.recta.top - window.pageYOffset) + "px"',
-                     left: '$(l.obj.subtreeRects[l.i].x + l.delta.x - l.recta.left - window.pageXOffset) + "px"',
-                     width: '$(l.obj.subtreeRects[l.i].w) + "px"',
-                     height: '$(l.obj.subtreeRects[l.i].h) + "px"',
-                  }
-               }
-            },
-            // objectModel:'console',
-            // method:'log',
-            // arguments:['$l.tmp']
+            melem:'$l.obj.subtreeElems[l.i]',
+            'melem.style.top' : '$(l.obj.subtreeRects[l.i].y + l.delta.y - l.recta.top - window.pageYOffset) + "px"',
+            'melem.style.left': '$(l.obj.subtreeRects[l.i].x + l.delta.x - l.recta.left - window.pageXOffset) + "px"',
          }
+      },
+      {
+         declare:{
+            args77:{
+               pos:'$l.pos',
+               obj:'$l.obj'
+            }
+         }
+         // objectModel:'engine',
+         // method:'processRequest',
+         // arguments:['$l.obj.snap', '$l.args77']
       }
    ]
 }
-var CADDragged = {
+var CADDragged = {//(event, obj)
    callback:[
       {
          objectModel:'$l.obj.elem',
@@ -658,36 +620,22 @@ var CADDragged = {
       },
       {
          declare:{
-            obj:{
-               elem:{
-                  style:{
-                     visibility:'hidden'
-                  }
-               }
-            }
+            'obj.elem.style.visibility':'hidden'
          },
          extends:'elemByPoint',
          arguments:['$l.event.clientX', '$l.event.clientY'],
          response:'eb',
+
          callback:[
             {
                declare:{
-                  obj:{
-                     elem:{
-                        style:{
-                           visibility:'visible',
-                           top:'$(l.recta.top - l.roct.top) + "px"',
-                           left:'$(l.recta.left - l.roct.left) + "px"',
-                           width:'$l.recta.width + "px"',
-                           height:'$l.recta.height + "px"'
-                        }
-                     }
-                  }
+                  'obj.elem.style.visibility':'visible'
+
                },
                // callback:{
                //    objectModel:'console',
                //    method:'log',
-               //    arguments:'$l'
+               //    arguments:'$l.eb'
                // }
             },
             {
@@ -715,6 +663,27 @@ var CADDragged = {
                      response:'elid'
                   },
                   // {
+                  //    objectModel:'console',
+                  //    method:'log',
+                  //    arguments:['$l.elid', '$l.ebid']
+                  // },
+                  {
+                     declare:{
+                        args:{
+                           obj:'$l.CADAsNodes[l.elid[1]]',
+                           parent:'$l.CADAsNodes[l.ebid[1]]'
+                        }
+                     },
+                     objectModel:'engine',
+                     method:'processRequest',
+                     arguments:['CADNodeMakeChildOf', '$l.args'],
+                     callback:{
+                        objectModel:'console',
+                        method:'log',
+                        arguments:["CADAsNodes" ,'$l.CADAsNodes', "with", "$l.nodething"]
+                     },
+                  },
+                  // {
                   //    objectModel:'engine',
                   //    method:'processRequest',
                   //    arguments:['$l.obj.addLines', '$l.args91', true]
@@ -732,9 +701,8 @@ var CADDragged = {
                   },
                   {
                      declare:{
-                        obj:{
-                           elem:null
-                        }
+                        'obj.elem.style.zIndex':'$(l.eb.style.zIndex || 0) + 1',
+                        'obj.elem':null
                      }
                   }
                ]
@@ -751,7 +719,7 @@ var CADElemsinTree = { //(nodeId, response, rect, obj)
       // {
       //    objectModel:'console',
       //    method:'log',
-      //    arguments:['$l.elem']
+      //    arguments:["NODE IS", '$l.nodeId']
       // },
       {
          objectModel:'$l.elem',
@@ -767,7 +735,6 @@ var CADElemsinTree = { //(nodeId, response, rect, obj)
                h: '$l.re.height'
             }
          },
-         /////////////////HEWRERERRERER
          extends:'elemById',
          arguments:['$"cad-"+l.nodeId'],
          response:'elem2',
@@ -801,9 +768,10 @@ var CADElemsinTree = { //(nodeId, response, rect, obj)
             },
             objectModel:'engine',
             method:'processRequest',
-            arguments:['$l.obj.elemsinTree', '$l.args76', true]
+            arguments:['$l.obj.elemsinTree', '$l.args76']
          }
-      },{
+      },
+      {
          // callback:{
          //    objectModel:'console',
          //    method:'log',
@@ -813,9 +781,9 @@ var CADElemsinTree = { //(nodeId, response, rect, obj)
    ]
 }
 
-window.onload = function(){
+window.onload = async function(){
    doThisOnce();
-   var cad = engine.processRequest('CAD', {elem:document.getElementsByClassName('fc')[0], proximityQ:10});
+   var cad = await engine.processRequest('CAD', {elem:document.getElementsByClassName('fc')[0], proximityQ:10});
 }
 
 function addClassListener(event, selector, doit){
