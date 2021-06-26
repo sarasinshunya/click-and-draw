@@ -232,7 +232,8 @@ var CAD = { // constructor(elem:HTMLObject, proximityQ:number)
          method:'addRequestListener',
          arguments:['$l.obj.root', 'mousedown', '$l.obj.mousedown', '$l.args']
       }
-   ]
+   ],
+   return:'$l'
 }
 var CADMouseDown = { //(event:Event, obj:obj)
    declare :{
@@ -781,10 +782,7 @@ var CADElemsinTree = { //(nodeId, response, rect, obj)
    ]
 }
 
-window.onload = async function(){
-   doThisOnce();
-   var cad = await engine.processRequest('CAD', {elem:document.getElementsByClassName('fc')[0], proximityQ:10});
-}
+doThisOnce();
 
 function addClassListener(event, selector, doit){
    document.addEventListener(event, function(e){
