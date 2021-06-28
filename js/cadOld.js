@@ -83,7 +83,6 @@ class CADNode{
 }
 class CAD{
 	static LIMIT = 1e7;
-	static className = 'cad';
 	static iHTML = `
 			<select class = "cad-menu">
 				<option value = "editable" selected>Editable</option>
@@ -183,8 +182,8 @@ class CAD{
 		var w = Math.abs(start.x - end.x);
 		var h = Math.abs(start.y - end.y);
 
-		obj.telem.style.top = (y - obj.root.getBoundingClientRect().top) + "px";
-		obj.telem.style.left = (x - obj.root.getBoundingClientRect().left) + "px";
+		obj.telem.style.top = (y - window.pageYOffset - obj.root.getBoundingClientRect().top) + "px";
+		obj.telem.style.left = (x - window.pageXOffset - obj.root.getBoundingClientRect().left) + "px";
 		obj.telem.style.width = w + "px";
 		obj.telem.style.height = h + "px";
 	}
@@ -201,12 +200,15 @@ class CAD{
 		obj.elem = null;
 	}
 
-	drag(obj){		// remove them all
-		obj.removeLines(obj.elem, obj);
+	drag(obj){		
 		//we will hide every element in it's subtree
 		obj.subtreeElems = [], obj.subtreeRects = [];
 
 		obj.elemsinTree(parseInt(obj.elem.id.substr(4)), obj.subtreeElems, obj.subtreeRects);
+
+		for(var i=0;i<obj.subtreeElems.length;i++){
+			obj.removeLines(obj.subtreeElems[i], obj);
+		}
 
 		obj.addListener(obj.root, 'mousemove', obj.dragging, obj);
 		// obj.addListener(window, 'scroll', obj.dragging, obj);
@@ -234,8 +236,8 @@ class CAD{
 			wpyo: end.wpyo - start.wpyo
 		};
 		for (var i = 0; i < obj.subtreeElems.length; i++) {
-			obj.subtreeElems[i].style.top = (obj.subtreeRects[i].y + delta.y - obj.root.getBoundingClientRect().top) + 'px';// + delta.wpxo);
-			obj.subtreeElems[i].style.left = (obj.subtreeRects[i].x + delta.x - obj.root.getBoundingClientRect().left) + 'px';// + delta.wpyo);
+			obj.subtreeElems[i].style.top = (obj.subtreeRects[i].y + delta.y - obj.root.getBoundingClientRect().top - window.pageYOffset) + 'px';// + delta.wpxo);
+			obj.subtreeElems[i].style.left = (obj.subtreeRects[i].x + delta.x - obj.root.getBoundingClientRect().left - window.pageXOffset) + 'px';// + delta.wpyo);
 		}
 		
 		var pos = {
@@ -252,8 +254,6 @@ class CAD{
 			obj.snapToElemEdges(obj.elem, obj);
 
 		} else if(obj.snapMode == 'grid-lines'){
-
-		} else if(obj.snapMode == 'grid-points'){
 
 		}
 	}
@@ -282,11 +282,11 @@ class CAD{
 		var delta = {};
 		if(mindistance <= obj.pq){
 			if(minline == 0){
-				delta.y = (nearest[minline] - CAD.borderWidth) ;
+				delta.y = (nearest[minline] ) ;
 			} else if(minline == 1){
-				delta.y = (nearest[minline] - elem.getBoundingClientRect().height - CAD.borderWidth);
+				delta.y = (nearest[minline] - elem.getBoundingClientRect().height );
 			} else {
-				delta.y = (nearest[minline] - elem.getBoundingClientRect().height/2 - CAD.borderWidth);
+				delta.y = (nearest[minline] - elem.getBoundingClientRect().height/2 );
 			}
 		}
 		mindistance = CAD.LIMIT, minline = 2;
@@ -298,18 +298,25 @@ class CAD{
 		}
 		if(mindistance <= obj.pq){
 			if(minline == 3){
-				delta.x = (nearest[minline] - CAD.borderWidth);
+				delta.x = (nearest[minline] );
 			} else if(minline == 4){
-				delta.x = (nearest[minline] - elem.getBoundingClientRect().width  - CAD.borderWidth);
+				delta.x = (nearest[minline] - elem.getBoundingClientRect().width );
 			} else {
-				delta.x = (nearest[minline] - elem.getBoundingClientRect().width/2  - CAD.borderWidth);
+				delta.x = (nearest[minline] - elem.getBoundingClientRect().width/2  );
 			}
 		}
-		delta.y -= (elem.getBoundingClientRect().top + window.pageYOffset);
-		delta.x -= (elem.getBoundingClientRect().left+ window.pageXOffset);
+		delta.y -= (obj.elem.getBoundingClientRect().top + window.pageYOffset);
+		delta.x -= (obj.elem.getBoundingClientRect().left + window.pageXOffset);
+
+
 		for (var i = 0; i < obj.subtreeElems.length; i++) {
-			obj.subtreeElems[i].style.top = (obj.subtreeElems[i].getBoundingClientRect().top + window.pageYOffset + delta.y  - obj.root.getBoundingClientRect().top) + 'px';// + delta.wpxo);
-			obj.subtreeElems[i].style.left = (obj.subtreeElems[i].getBoundingClientRect().left + window.pageXOffset + delta.x - obj.root.getBoundingClientRect().left) + 'px';// + delta.wpyo);
+			var sy = obj.subtreeElems[i].style.top;
+			var sx = obj.subtreeElems[i].style.left;
+			sy = parseInt(sy.substr(0, sy.length-2));
+			sx = parseInt(sx.substr(0, sx.length-2));
+				
+			obj.subtreeElems[i].style.top = (sy + delta.y ) + 'px';// + delta.wpxo);
+			obj.subtreeElems[i].style.left = (sx + delta.x ) + 'px';// + delta.wpyo);
 		}
 		// console.log(distance, obj.pq, mindistance);
 	}
@@ -323,7 +330,10 @@ class CAD{
 
 		obj.CADAsNodes[elid].makeChildOf(obj.CADAsNodes[ebid]);
 
-		obj.addLines(obj.elem, obj);
+		for(var i=0;i<obj.subtreeElems.length;i++){
+			obj.addLines(obj.subtreeElems[i], obj);
+		}
+
 		obj.resetListeners(event, obj);
 		console.log(obj.CADAsNodes);
 
@@ -371,12 +381,12 @@ class CAD{
 		var linesY = this.linesY.gimmeArray();
 
 		for (var i = linesX.length - 1; i >= 0; i--) {
-			ctx.moveTo(0, linesX[i]-obj.root.getBoundingClientRect().top);
-			ctx.lineTo(canvas.width, linesX[i]-obj.root.getBoundingClientRect().top);
+			ctx.moveTo(0, linesX[i]-obj.root.getBoundingClientRect().top-window.pageYOffset);
+			ctx.lineTo(canvas.width, linesX[i]-obj.root.getBoundingClientRect().top-window.pageYOffset);
 		}
 		for (var i = linesY.length - 1; i >= 0; i--) {
-			ctx.moveTo(linesY[i]-obj.root.getBoundingClientRect().left, 0);
-			ctx.lineTo(linesY[i]-obj.root.getBoundingClientRect().left, canvas.height);
+			ctx.moveTo(linesY[i]-obj.root.getBoundingClientRect().left-window.pageXOffset, 0);
+			ctx.lineTo(linesY[i]-obj.root.getBoundingClientRect().left-window.pageXOffset, canvas.height);
 		}
 		ctx.stroke();
 	}
@@ -415,48 +425,6 @@ class CAD{
 			this.elemsinTree(this.CADAsNodes[nodeId].children[i], response, rect);
 		}
 	}
-}
-
-//utility functions
-function relativePosition(elem, start){ // with respect to parent
-	
-	return {x: start.x - elem.getBoundingClientRect().left - window.scrollX, y: start.y - elem.getBoundingClientRect().top - window.scrollY};
-}
-
-function getNearestPoint(point, unit){
-	var r = point;
-	if(point.x - unit * parseInt(point.x / unit) > unit/2){
-		r.x = parseInt(point.x / unit);
-	} else {
-		r.x = parseInt(point.x / unit) + unit;
-	}
-	if(point.y - unit * parseInt(point.y / unit) > unit/2){
-		r.y = parseInt(point.y / unit);
-	} else {
-		r.y = parseInt(point.y / unit) + unit;
-	}
-}
-
-function HYPOT(x, y){
-	return Math.sqrt(x*x + y*y);
-}
-
-function distanceBoxParticle2D( x,  y,  x_min,  y_min,
-         x_max,  y_max)
-{
-    if (x < x_min) {
-        if (y <  y_min) return HYPOT(x_min-x, y_min-y);
-        if (y <= y_max) return x_min - x;
-                        return HYPOT(x_min-x, y_max-y);
-    } else if (x <= x_max) {
-        if (y <  y_min) return y_min - y;
-        if (y <= y_max) return 0;
-                        return y - y_max;
-    } else {
-        if (y <  y_min) return HYPOT(x_max-x, y_min-y);
-        if (y <= y_max) return x - x_max;
-                        return HYPOT(x_max-x, y_max-y);
-    }
 }
 
 function addClassListener(event, selector, doit){
