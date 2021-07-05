@@ -7,22 +7,35 @@ body{
 }
 #drawlines{
 	position:absolute;
-	top:10vh;
-	left:10vw;
+	top:50px;
+	left:50px;
 	z-index:-1;
 
 }
 .cad-element, .cad{
 	position: absolute;
-	border:1px solid #000;
+	border:2px solid #000;
 	overflow:visible;
-	background:#ff0;
+	background:#ffd;
+}
+.cad-curve{
+	border-color:transparent;
+	background:transparent;
+}
+.cad-canvas{
+	background:transparent;
+	border-color:transparent;
+}
+.cad-point{
+	border-color:blue;
+	width:5px;
+	height:5px;	
 }
 .fc{
-	top:10vh;
-	left:10vw;
-	width:100vw;
-	height:100vh;
+	top:50px;
+	left:50px;
+	width:1500px;
+	height:1000px;
 	box-sizing: border-box;
 	background: transparent;
 }
@@ -44,4 +57,17 @@ body{
 }
 .snapped-to{
 	background:blue;
+}
+
+.cad:hover, .cad-element:hover{
+	border:2px solid #f00;
+}
+.cad-root:hover{
+	border:2px solid #000;
+}
+.cad-canvas:hover ~ .cad-point{
+	opacity:1;
+}
+.cad-point:hover{
+	opacity:1;
 }

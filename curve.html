@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+   <head>
+      <title>Click And Draw</title>
+      <link rel="stylesheet" href="css/curve.css" >
+   </head>
+   <body class="unselectable">
+
+      x1:<input id="x1" type="number" /> <br>
+      y1:<input id="y1" type="number" /><br>
+      x2:<input id="x2" type="number" /><br>
+      y2:<input id="y2" type="number" /><br>
+      cx1:<input id="cx1" type="number" /><br>
+      cy1:<input id="cy1" type="number" /><br>
+      cx2:<input id="cx2" type="number" /><br>
+      cy2:<input id="cy2" type="number" /><br>
+
+      <div id="cad-curve-0" class="cad-element cad-curve" data-tag="draggable">
+         <canvas id="fc" width = "500" height="500">
+            
+         </canvas>
+         <div id="cad-point-1" data-tag="draggable" class="cad-element cad-point"></div>
+         <div id="cad-point-2" data-tag="draggable" class="cad-element cad-point"></div>
+         <div id="cad-control-point-1" data-tag="draggable" class="cad-element cad-point"></div>
+         <div id="cad-control-point-2" data-tag="draggable" class="cad-element cad-point"></div>
+      </div>
+      <script src = "js/curve.js"></script>
+   </body>
+</html>

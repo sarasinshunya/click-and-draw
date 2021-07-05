@@ -85,8 +85,11 @@ class CAD{
 	static LIMIT = 1e7;
 	static iHTML = `
 			<select class = "cad-menu">
-				<option value = "editable" selected>Editable</option>
-				<option value = "draggable">Draggable</option>
+				<option value = "editable" selected>Draw Rectangle</option>
+				<option value = "editable-curve">Draw Line/Curve</option>
+				<option value = "editable-ellipse">Draw Ellipse</option>
+				<option value = 'editable-freehand'>Draw Freehand</option>
+				<option value = "draggable">Drag</option>
 			</select>
 		`;
 	static borderWidth = 1;
@@ -95,6 +98,8 @@ class CAD{
 		this.root = elem; // this will be the root, only edit mode
 
 		this.root.classList.add('cad');
+		this.root.classList.add('cad-root');
+
 		this.root.setAttribute('data-tag', 'editable');
 		this.root.id = 'cad-0';
 
@@ -120,6 +125,18 @@ class CAD{
 
 		this.addListener(obj.root, 'mousedown', obj.mousedown, obj);
 	}
+
+	getCADAncestorWhichContainsClass(elem, cl){
+		var id = parseFloat(elem.id.substr(4));
+
+		while(elem && (! elem.classList.contains(cl))){
+			// console.log(elem);
+			id = this.CADAsNodes[id].parent.id;
+			elem = document.getElementById('cad-'+id);
+		}
+
+		return elem;
+	}
 	mousedown(event, obj){
 		
 		// console.log(obj.elem);
@@ -133,6 +150,8 @@ class CAD{
 		var start = obj.start;
 		
 		var eb = document.elementFromPoint(start.x - window.pageXOffset, start.y - window.pageYOffset);
+		
+
 		obj.elem = eb;
 
 		var rect = obj.elem.getBoundingClientRect();
@@ -142,20 +161,32 @@ class CAD{
 			w : rect.width, 
 			h : rect.height
 		};
+		
+		console.log(eb.getAttribute('data-tag'));
+
 		if(eb.getAttribute('data-tag') == 'editable'){
 			obj.create(obj);
 		} 
 		else if(eb.getAttribute('data-tag') == 'draggable'){
 			obj.drag(obj);
 		}
+		else if(eb.getAttribute('data-tag') == 'editable-curve'){
+			obj.createCurve(obj);
+		} else if(eb.getAttribute('data-tag') == 'drag-curve'){
+			
+			obj.elem = obj.getCADAncestorWhichContainsClass(obj.elem, 'cad-curve');
+			obj.drag(obj);
+		} else if(eb.getAttribute('data-tag') == 'drag-curve-point'){
+			obj.dragPoint(obj);
+		}
 		// console.log(obj);
 	}
 	create(obj){
 		obj.addListener(obj.root, 'mousemove', obj.creating, obj);
 		obj.addListener(obj.root, 'mouseup', obj.created, obj);
+
 	}
 	creating(event, obj){
-		
 		var start = obj.start;
 		var end = {
 			x : event.pageX, 
@@ -169,11 +200,11 @@ class CAD{
 			obj.telem.classList.add('cad');
 			obj.telem.setAttribute('data-tag', 'editable');
 			obj.root.appendChild(obj.telem);
-			obj.telem.style.zIndex =  (window.getComputedStyle(obj.elem, null).getPropertyValue("zIndex") || 0) + 1;
+			obj.telem.style.zIndex =  (parseFloat(window.getComputedStyle(obj.elem, null).getPropertyValue("zIndex")) || 0) + 1;
 			
 			obj.telem.id = 'cad-'+ (++obj.idCounter);
 			var telemid = obj.idCounter;
-			var parentid = parseInt(obj.elem.id.substr(4)); // 4 to last
+			var parentid = parseFloat(obj.elem.id.substr(4)); // 4 to last
 
 			obj.CADAsNodes.push(new CADNode(telemid, obj.CADAsNodes[parentid]));
 		}
@@ -199,15 +230,307 @@ class CAD{
 		obj.telem = null;
 		obj.elem = null;
 	}
+	createCurve(obj){
+		// point -------------- point
+		// 
+		// CADPoint (x, y)
+		// CADCurve(CADPoint1, CADPoint2, CadPointControl1, CADPointControl2)
+		// We can drag the parabola by clicking on it
+		// we can move the control points and points themselves
+		// An Imaginary Point hub that can group some points, then they can move together
+		// okay the next thing should be 
+		// 
+		// every cad-point has an imaginary point hub
+		obj.addListener(obj.root, 'mousemove', obj.creatingCurve, obj);
+		obj.addListener(obj.root, 'mouseup', obj.createdCurve, obj);
+		
+		
 
+	}
+	creatingCurve(event, obj){
+		if(!obj.telem){
+			obj.telem = document.createElement('div');
+			
+			obj.telem.classList.add('cad-curve');
+			obj.telem.classList.add('cad');
+
+			obj.telem.setAttribute('data-tag', 'draggable');
+			obj.root.appendChild(obj.telem);
+			obj.telem.style.zIndex =  (parseFloat(window.getComputedStyle(obj.elem, null).getPropertyValue("zIndex")) || 0) + 1;
+			
+			obj.telem.id = 'cad-'+ (++obj.idCounter);
+			var telemid = obj.idCounter;
+			var parentid = parseFloat(obj.elem.id.substr(4)); // 4 to last
+
+			obj.CADAsNodes.push(new CADNode(telemid, obj.CADAsNodes[parentid]));
+
+			var p1 = document.createElement('div');
+			var p2 = document.createElement('div');
+			var cp1 = document.createElement('div');
+			var cp2 = document.createElement('div');
+			var can = document.createElement('canvas');
+
+			obj.p1 = p1;
+			obj.p2 = p2;
+			obj.cp1 = cp1;
+			obj.cp2 = cp2;
+			obj.can = can;
+
+			p1.classList.add('cad-point');
+			p2.classList.add('cad-point');
+			cp1.classList.add('cad-point');
+			cp2.classList.add('cad-point');
+			can.classList.add('cad-canvas');
+
+
+			p1.classList.add('cad-element');
+			p2.classList.add('cad-element');
+			cp1.classList.add('cad-element');
+			cp2.classList.add('cad-element');
+			can.classList.add('cad-element');
+
+			p1.setAttribute('data-tag', 'drag-curve-point');
+			p2.setAttribute('data-tag', 'drag-curve-point');
+			cp1.setAttribute('data-tag', 'drag-curve-point');
+			cp2.setAttribute('data-tag', 'drag-curve-point');
+			can.setAttribute('data-tag', 'drag-curve');
+
+			var curveId = parseFloat(obj.telem.id.substr(4));
+			obj.curveId = curveId;
+
+			var xp1 = new CADNode(++obj.idCounter, obj.CADAsNodes[curveId]);
+			p1.id = 'cad-'+(obj.idCounter);
+
+			var xp2 = new CADNode(++obj.idCounter, obj.CADAsNodes[curveId]);
+			p2.id = 'cad-'+(obj.idCounter);
+			
+			var xcp1 = new CADNode(++obj.idCounter, obj.CADAsNodes[curveId]);
+			cp1.id = 'cad-'+(obj.idCounter);
+
+			var xcp2 = new CADNode(++obj.idCounter, obj.CADAsNodes[curveId]);
+			cp2.id = 'cad-'+(obj.idCounter);
+
+			var xcan = new CADNode(++obj.idCounter, obj.CADAsNodes[curveId]);
+			can.id = 'cad-'+(obj.idCounter);
+			
+			obj.root.appendChild(can);
+			obj.root.appendChild(p1);
+			obj.root.appendChild(p2);
+			obj.root.appendChild(cp1);
+			obj.root.appendChild(cp2);
+			
+			can.style.zIndex = parseFloat(obj.telem.style.zIndex) + 1;
+			p1.style.zIndex = parseFloat(obj.telem.style.zIndex) + 2;
+			p2.style.zIndex = parseFloat(obj.telem.style.zIndex) + 2;
+			cp1.style.zIndex = parseFloat(obj.telem.style.zIndex) + 2;
+			cp2.style.zIndex = parseFloat(obj.telem.style.zIndex) + 2;
+
+			obj.CADAsNodes.push(xcan);
+			obj.CADAsNodes.push(xp1);
+			obj.CADAsNodes.push(xp2);
+			obj.CADAsNodes.push(xcp1);
+			obj.CADAsNodes.push(xcp2);
+		}
+		var start = obj.start;
+		var end = {
+			x : event.pageX, 
+			y : event.pageY,
+			wpxo : window.pageXOffset,
+			wpyo : window.pageYOffset
+		};
+		var p1 = obj.p1;
+		var p2 = obj.p2;
+		var cp1 = obj.cp1;
+		var cp2 = obj.cp2;
+		var can = obj.can;
+
+		var x = Math.min(start.x, end.x);
+		var y = Math.min(start.y, end.y);
+		var w = Math.abs(start.x - end.x);
+		var h = Math.abs(start.y - end.y);
+
+		obj.telem.style.top = (y - window.pageYOffset - obj.root.getBoundingClientRect().top) + "px";
+		obj.telem.style.left = (x - window.pageXOffset - obj.root.getBoundingClientRect().left) + "px";
+		obj.telem.style.width = w + "px";
+		obj.telem.style.height = h + "px";
+
+		var rect = obj.telem.getBoundingClientRect();
+		var roct = obj.root.getBoundingClientRect();
+
+		p1.style.top = (rect.top - roct.top + 10)+"px";
+		p1.style.left = (rect.left - roct.left + 10)+"px";
+
+		p2.style.top = (rect.top - roct.top + rect.height - 10)+"px";
+		p2.style.left = (rect.left - roct.left + rect.width - 10)+"px";
+		
+		cp1.style.top = (rect.top - roct.top + rect.height/2)+"px";
+		cp1.style.left = (rect.left - roct.left + 10 )+"px";
+		
+		cp2.style.top = (rect.top - roct.top + rect.height/2)+"px";
+		cp2.style.left = (rect.left - roct.left + rect.width - 10)+"px";
+
+
+		obj.updateCurve(obj.curveId, obj);
+	}
+	createdCurve(event, obj){
+		obj.addLines(obj.telem, obj);
+		obj.resetListeners(event, obj);
+		obj.telem = null;
+	}
+	updateCurve(curveId, obj){
+		var a = [];
+		var c = document.getElementById('cad-'+curveId)
+		var p1 = document.getElementById('cad-'+(curveId+1));
+		var p2 = document.getElementById('cad-'+(curveId+2));
+		var cp1 = document.getElementById('cad-'+(curveId+3));
+		var cp2 = document.getElementById('cad-'+(curveId+4));
+		var can = document.getElementById('cad-'+(curveId+5));
+		var rect = c.getBoundingClientRect();
+		var roct = obj.root.getBoundingClientRect();
+		function getPx(str){
+			return parseFloat(str.substr(0, str.length-2));
+		}
+		var xmin, xmax, ymin, ymax, w, h;
+
+		xmin = Math.min(getPx(p1.style.left), getPx(p2.style.left));
+      xmin = Math.min(xmin, getPx(cp1.style.left));
+      xmin = Math.min(xmin, getPx(cp2.style.left));
+
+      xmax = Math.max(getPx(p1.style.left), getPx(p2.style.left));
+      xmax = Math.max(xmax, getPx(cp1.style.left));
+      xmax = Math.max(xmax, getPx(cp2.style.left));
+
+      
+      ymin = Math.min(getPx(p1.style.top), getPx(p2.style.top));
+      ymin = Math.min(ymin, getPx(cp1.style.top));
+      ymin = Math.min(ymin, getPx(cp2.style.top));
+
+      ymax = Math.max(getPx(p1.style.top), getPx(p2.style.top));
+      ymax = Math.max(ymax, getPx(cp1.style.top));
+      ymax = Math.max(ymax, getPx(cp2.style.top));
+
+      xmax += 10;
+      ymax += 10;
+      xmin -= 10;
+      ymin -= 10;
+
+      w = xmax - xmin;
+      h = ymax - ymin;
+      
+
+
+      c.style.width = w + "px";
+      c.style.height = h + "px";
+      c.style.top = ymin + "px";
+      c.style.left = xmin + "px";
+
+
+		can.width = w;
+		can.height = h;
+      can.style.top = ymin + "px";
+      can.style.left = xmin + "px";
+		
+		var ctx = can.getContext('2d');
+
+
+	   ctx.fillStyle = 'transparent';
+	   ctx.fillRect(0,0, can.width, can.height);
+
+		function computeCoordinates(p){ // of a with relative to b
+
+			var px = parseFloat(p.style.left.substr(0, p.style.left.length-2));
+			var py = parseFloat(p.style.top.substr(0, p.style.top.length-2));
+			px -= (rect.left - roct.left);
+			py -= (rect.top - roct.top);
+			return [px, py];
+		}
+		var a = [...computeCoordinates(p1), ...computeCoordinates(p2), ...computeCoordinates(cp1), ...computeCoordinates(cp2)];
+
+		for(var i=0;i<a.length;i++){
+			a[i]+=5;
+		}
+		ctx.beginPath();
+		ctx.strokeStyle = '#000';
+
+		ctx.moveTo(a[0], a[1]);
+   	ctx.bezierCurveTo(a[4], a[5], a[6], a[7], a[2], a[3]);
+
+   	ctx.stroke();
+
+   	ctx.beginPath();
+		ctx.strokeStyle = '#aaa';
+
+   	ctx.moveTo(a[0], a[1]);
+   	ctx.lineTo(a[4], a[5]);
+   	ctx.moveTo(a[6], a[7]);
+   	ctx.lineTo(a[2], a[3]);
+   	
+   	ctx.stroke();
+	}
+
+	dragPoint(obj){
+		obj.subtreeElems = [], obj.subtreeRects = [];
+
+		var curve = obj.getCADAncestorWhichContainsClass(obj.elem, 'cad-curve');
+
+		obj.removeLines(curve, obj);
+
+		obj.elemsinTree(parseFloat(obj.elem.id.substr(4)), obj.subtreeElems, obj.subtreeRects, curve);
+
+		for(var i=0;i<obj.subtreeElems.length;i++){
+			obj.subtreeElems[i].style.zIndex = CAD.LIMIT + obj.subtreeRects[i].d;
+		}
+		obj.curveId = parseFloat(curve.id.substr(4));
+
+
+
+		obj.addListener(obj.root, 'mousemove', obj.draggingPoint, obj);
+		obj.addListener(obj.root, 'mouseup', obj.draggedPoint, obj);
+	}
+	draggingPoint(event, obj){
+		var start = obj.start;
+		var end = (event.type == 'scroll') ? {
+			x : event.pageX, 
+			y : event.pageY,
+			wpxo : window.pageXOffset,
+			wpyo : window.pageYOffset
+		} : {
+			x : event.pageX, 
+			y : event.pageY,
+			wpxo : window.pageXOffset,
+			wpyo : window.pageYOffset
+		};
+
+		var delta = {
+			x:end.x - start.x, 
+			y:end.y - start.y, 
+			wpxo: end.wpxo - start.wpxo, 
+			wpyo: end.wpyo - start.wpyo
+		};
+		for (var i = 0; i < 1; i++) {
+			obj.subtreeElems[i].style.top = (obj.subtreeRects[i].y + delta.y - obj.root.getBoundingClientRect().top - window.pageYOffset) + 'px';// + delta.wpxo);
+			obj.subtreeElems[i].style.left = (obj.subtreeRects[i].x + delta.x - obj.root.getBoundingClientRect().left - window.pageXOffset) + 'px';// + delta.wpyo);
+		}
+		obj.updateCurve(obj.curveId, obj);
+	}
+	draggedPoint(event, obj){
+		obj.addLines(document.getElementById('cad-'+obj.curveId), obj);
+		for(var i=0;i<obj.subtreeElems.length;i++){
+			var pid = obj.CADAsNodes[parseFloat(obj.subtreeElems[i].id.substr(4))].parent.id;
+			obj.subtreeElems[i].style.zIndex = (parseFloat(document.getElementById('cad-'+pid).style.zIndex) || 0) + 1 + obj.subtreeRects[i].d;
+		}	
+		obj.resetListeners(event, obj);
+		obj.elem = null;
+	}
 	drag(obj){		
 		//we will hide every element in it's subtree
 		obj.subtreeElems = [], obj.subtreeRects = [];
 
-		obj.elemsinTree(parseInt(obj.elem.id.substr(4)), obj.subtreeElems, obj.subtreeRects);
+		obj.elemsinTree(parseFloat(obj.elem.id.substr(4)), obj.subtreeElems, obj.subtreeRects);
 
 		for(var i=0;i<obj.subtreeElems.length;i++){
 			obj.removeLines(obj.subtreeElems[i], obj);
+			obj.subtreeElems[i].style.zIndex = CAD.LIMIT + obj.subtreeRects[i].d;
 		}
 
 		obj.addListener(obj.root, 'mousemove', obj.dragging, obj);
@@ -254,7 +577,69 @@ class CAD{
 			obj.snapToElemEdges(obj.elem, obj);
 
 		} else if(obj.snapMode == 'grid-lines'){
+			obj.snapToGridLines(obj.elem, obj);
+		}
+	}
+	snapToGridLines(elem, obj){
+		var eLines = obj.getLines(elem);
 
+		var distance = new Array(4);
+		var nearest = new Array(4);
+		for(var i = 0; i < 3; i++){
+			nearest[i] = obj.getNearestGridLine(eLines[i]);
+			distance[i] = Math.abs(eLines[i] - nearest[i]);
+		}
+		
+		for(var i = 3; i < 6; i++){
+			nearest[i] = obj.getNearestGridLine(eLines[i]);
+			distance[i] = Math.abs(eLines[i] - nearest[i]);
+		}
+		
+		var mindistance = CAD.LIMIT, minline = 0;
+		for (var i = 2; i >= 0; i--) {
+			if(distance[i] < mindistance){
+				mindistance = distance[i];
+				minline = i;
+			}
+		}
+		var delta = {};
+		if(mindistance <= obj.pq){
+			if(minline == 0){
+				delta.y = (nearest[minline] ) ;
+			} else if(minline == 1){
+				delta.y = (nearest[minline] - elem.getBoundingClientRect().height );
+			} else {
+				delta.y = (nearest[minline] - elem.getBoundingClientRect().height/2 );
+			}
+		}
+		mindistance = CAD.LIMIT, minline = 2;
+		for (var i = 5; i >= 3; i--) {
+			if(distance[i] < mindistance){
+				mindistance = distance[i];
+				minline = i;
+			}
+		}
+		if(mindistance <= obj.pq){
+			if(minline == 3){
+				delta.x = (nearest[minline] );
+			} else if(minline == 4){
+				delta.x = (nearest[minline] - elem.getBoundingClientRect().width );
+			} else {
+				delta.x = (nearest[minline] - elem.getBoundingClientRect().width/2  );
+			}
+		}
+		delta.y -= (obj.elem.getBoundingClientRect().top + window.pageYOffset);
+		delta.x -= (obj.elem.getBoundingClientRect().left + window.pageXOffset);
+
+
+		for (var i = 0; i < obj.subtreeElems.length; i++) {
+			var sy = obj.subtreeElems[i].style.top;
+			var sx = obj.subtreeElems[i].style.left;
+			sy = parseFloat(sy.substr(0, sy.length-2));
+			sx = parseFloat(sx.substr(0, sx.length-2));
+				
+			obj.subtreeElems[i].style.top = (sy + delta.y ) + 'px';// + delta.wpxo);
+			obj.subtreeElems[i].style.left = (sx + delta.x ) + 'px';// + delta.wpyo);
 		}
 	}
 	snapToElemEdges(elem, obj){ //just telem, elem
@@ -312,8 +697,8 @@ class CAD{
 		for (var i = 0; i < obj.subtreeElems.length; i++) {
 			var sy = obj.subtreeElems[i].style.top;
 			var sx = obj.subtreeElems[i].style.left;
-			sy = parseInt(sy.substr(0, sy.length-2));
-			sx = parseInt(sx.substr(0, sx.length-2));
+			sy = parseFloat(sy.substr(0, sy.length-2));
+			sx = parseFloat(sx.substr(0, sx.length-2));
 				
 			obj.subtreeElems[i].style.top = (sy + delta.y ) + 'px';// + delta.wpxo);
 			obj.subtreeElems[i].style.left = (sx + delta.x ) + 'px';// + delta.wpyo);
@@ -321,17 +706,23 @@ class CAD{
 		// console.log(distance, obj.pq, mindistance);
 	}
 	dragged(event, obj){
-		obj.elem.style.visibility = "hidden";
-		var eb = document.elementFromPoint(event.clientX, event.clientY);
-		obj.elem.style.visibility = "visible";
+		for(var i=0;i<obj.subtreeElems.length;i++)
+			obj.subtreeElems[i].style.visibility = "hidden";
 
-		var ebid = parseInt(eb.id.substr(4));
-		var elid = parseInt(obj.elem.id.substr(4));
+		var eb = document.elementFromPoint(event.clientX, event.clientY);
+		
+		for(var i=0;i<obj.subtreeElems.length;i++)	
+			obj.subtreeElems[i].style.visibility = "visible";
+		
+
+		var ebid = parseFloat(eb.id.substr(4));
+		var elid = parseFloat(obj.elem.id.substr(4));
 
 		obj.CADAsNodes[elid].makeChildOf(obj.CADAsNodes[ebid]);
 
 		for(var i=0;i<obj.subtreeElems.length;i++){
 			obj.addLines(obj.subtreeElems[i], obj);
+			obj.subtreeElems[i].style.zIndex = (eb.style.zIndex || 0) + 1 + obj.subtreeRects[i].d;
 		}
 
 		obj.resetListeners(event, obj);
@@ -352,6 +743,7 @@ class CAD{
 		];
 	}
 	addLines(elem, obj){
+		if(! elem.classList.contains('cad')) return;
 		var rect = elem.getBoundingClientRect();
 		obj.linesX.insert(rect.top + window.pageYOffset);
 		obj.linesX.insert(rect.top + window.pageYOffset + rect.height);
@@ -362,6 +754,7 @@ class CAD{
 		obj.drawLines(obj);
 	}
 	removeLines(elem, obj){
+		if(! elem.classList.contains('cad')) return;
 		var rect = elem.getBoundingClientRect();
 		obj.linesX.remove(rect.top + window.pageYOffset);
 		obj.linesX.remove(rect.top + window.pageYOffset + rect.height);
@@ -409,21 +802,34 @@ class CAD{
 		obj.listeners = [];
 	}
 
-	elemsinTree(nodeId, response = [], rect = []){
-		var re = document.getElementById('cad-'+nodeId).getBoundingClientRect();
+	elemsinTree(nodeId, response = [], rect = [], ref = null){
+		
+		var el = document.getElementById('cad-'+nodeId);
+		if(ref === null) ref = el;
+
+		var re = el.getBoundingClientRect();
+		
+		response.push(el); //nodeId is basically a CADNode id
 		var rec = {
 			x : re.left + window.pageXOffset, 
 			y : re.top + window.pageYOffset, 
 			w : re.width, 
-			h : re.height
+			h : re.height,
+			d : parseFloat(el.style.zIndex) - parseFloat(ref.style.zIndex)
 		};
 		
-		response.push(document.getElementById('cad-'+nodeId)); //nodeId is basically a CADNode id
 		rect.push(rec);
 
+		if(this.CADAsNodes[nodeId].children)
 		for (var i = 0; i < this.CADAsNodes[nodeId].children.length; i++) {
-			this.elemsinTree(this.CADAsNodes[nodeId].children[i], response, rect);
+			this.elemsinTree(this.CADAsNodes[nodeId].children[i], response, rect, ref);
 		}
+	}
+	getNearestGridLine(line){
+		//gridsize
+		this.gridpixel = this.gridpixel || 70;
+		var gline = line/this.gridpixel;
+		return Math.round(gline) * this.gridpixel;
 	}
 }
 
