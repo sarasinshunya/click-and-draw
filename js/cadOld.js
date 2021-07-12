@@ -97,7 +97,9 @@ class CAD{
 	constructor(elem, proximityQ){
 		this.root = elem; // this will be the root, only edit mode
 
-		this.root.classList.add('cad');
+		this.keysDown = [];
+
+		this.root.classList.add('cad');	
 		this.root.classList.add('cad-root');
 
 		this.root.setAttribute('data-tag', 'editable');
@@ -124,8 +126,19 @@ class CAD{
 		this.addLines(this.root, obj);
 
 		this.addListener(obj.root, 'mousedown', obj.mousedown, obj);
+		this.addListener(window, 'keydown', obj.keydown, obj);
+		this.addListener(window, 'keyup', obj.keyup, obj);
+		
 	}
-
+	keydown(event, obj){
+		if(! obj.keysDown.includes(event.code)){
+			obj.keysDown.push(event.code);
+			console.log(obj.keysDown)
+		}
+	}
+	keyup(event, obj){
+		obj.keysDown.splice(obj.keysDown.indexOf(event.code), 1);
+	}
 	getCADAncestorWhichContainsClass(elem, cl){
 		var id = parseFloat(elem.id.substr(4));
 
@@ -186,6 +199,9 @@ class CAD{
 		obj.addListener(obj.root, 'mouseup', obj.created, obj);
 
 	}
+	getStyle(elem, value){
+		return window.getComputedStyle(elem, null).getPropertyValue(value);
+	}
 	creating(event, obj){
 		var start = obj.start;
 		var end = {
@@ -200,7 +216,7 @@ class CAD{
 			obj.telem.classList.add('cad');
 			obj.telem.setAttribute('data-tag', 'editable');
 			obj.root.appendChild(obj.telem);
-			obj.telem.style.zIndex =  (parseFloat(window.getComputedStyle(obj.elem, null).getPropertyValue("zIndex")) || 0) + 1;
+			obj.telem.style.zIndex =  (parseFloat(obj.getStyle(obj.elem, "zIndex")) || 0) + 1;
 			
 			obj.telem.id = 'cad-'+ (++obj.idCounter);
 			var telemid = obj.idCounter;
@@ -256,7 +272,7 @@ class CAD{
 
 			obj.telem.setAttribute('data-tag', 'draggable');
 			obj.root.appendChild(obj.telem);
-			obj.telem.style.zIndex =  (parseFloat(window.getComputedStyle(obj.elem, null).getPropertyValue("zIndex")) || 0) + 1;
+			obj.telem.style.zIndex =  (parseFloat(obj.elem.style.zIndex) || 0) + 1;
 			
 			obj.telem.id = 'cad-'+ (++obj.idCounter);
 			var telemid = obj.idCounter;
@@ -377,7 +393,7 @@ class CAD{
 		obj.resetListeners(event, obj);
 		obj.telem = null;
 	}
-	updateCurve(curveId, obj){
+	updateCurve(curveId, obj, updateType = "only-inside"){
 		var a = [];
 		var c = document.getElementById('cad-'+curveId)
 		var p1 = document.getElementById('cad-'+(curveId+1));
@@ -416,7 +432,6 @@ class CAD{
 
       w = xmax - xmin;
       h = ymax - ymin;
-      
 
 
       c.style.width = w + "px";
@@ -425,10 +440,33 @@ class CAD{
       c.style.left = xmin + "px";
 
 
-		can.width = w;
-		can.height = h;
-      can.style.top = ymin + "px";
-      can.style.left = xmin + "px";
+      var a = [];
+
+      if(updateType == 'whole-root'){
+      	obj.root.style.overflow = "hidden";
+      	var w = getPx(obj.getStyle(obj.root, "width"));
+      	var h = getPx(obj.getStyle(obj.root, "height"));
+      	can.width = w;
+			can.height = h;
+	      can.style.top = "0px";
+	      can.style.left = "0px";
+			a = [getPx(p1.style.left), getPx(p1.style.top), 
+			     getPx(p2.style.left), getPx(p2.style.top), 
+			     getPx(cp1.style.left), getPx(cp1.style.top), 
+			     getPx(cp2.style.left), getPx(cp2.style.top)];
+      } 
+      else {
+      	obj.root.style.overflow = "auto";
+			can.width = w;
+			can.height = h;
+	      can.style.top = ymin + "px";
+	      can.style.left = xmin + "px";
+			a = [...computeCoordinates(p1), 
+			     ...computeCoordinates(p2), 
+			     ...computeCoordinates(cp1), 
+			     ...computeCoordinates(cp2)];
+      }
+
 		
 		var ctx = can.getContext('2d');
 
@@ -444,7 +482,6 @@ class CAD{
 			py -= (rect.top - roct.top);
 			return [px, py];
 		}
-		var a = [...computeCoordinates(p1), ...computeCoordinates(p2), ...computeCoordinates(cp1), ...computeCoordinates(cp2)];
 
 		for(var i=0;i<a.length;i++){
 			a[i]+=5;
@@ -511,12 +548,15 @@ class CAD{
 			obj.subtreeElems[i].style.top = (obj.subtreeRects[i].y + delta.y - obj.root.getBoundingClientRect().top - window.pageYOffset) + 'px';// + delta.wpxo);
 			obj.subtreeElems[i].style.left = (obj.subtreeRects[i].x + delta.x - obj.root.getBoundingClientRect().left - window.pageXOffset) + 'px';// + delta.wpyo);
 		}
-		obj.updateCurve(obj.curveId, obj);
+		obj.updateCurve(obj.curveId, obj, 'whole-root');
 	}
 	draggedPoint(event, obj){
+		
+		obj.updateCurve(obj.curveId, obj);
+
 		obj.addLines(document.getElementById('cad-'+obj.curveId), obj);
 		for(var i=0;i<obj.subtreeElems.length;i++){
-			var pid = obj.CADAsNodes[parseFloat(obj.subtreeElems[i].id.substr(4))].parent.id;
+			var pid = obj.curveId;
 			obj.subtreeElems[i].style.zIndex = (parseFloat(document.getElementById('cad-'+pid).style.zIndex) || 0) + 1 + obj.subtreeRects[i].d;
 		}	
 		obj.resetListeners(event, obj);
@@ -570,7 +610,8 @@ class CAD{
 			h : obj.rect.h
 		};
 
-		obj.snap(pos, obj);
+		if(obj.keysDown.includes("ShiftLeft") || obj.keysDown.includes("ShiftRight"))
+			obj.snap(pos, obj);
 	}
 	snap(pos, obj){
 		if(obj.snapMode == 'elem-edges'){
@@ -786,6 +827,8 @@ class CAD{
 	resetListeners(event, obj){
 		obj.removeAllListeners(obj);
 		obj.addListener(obj.root, 'mousedown', obj.mousedown, obj);
+		obj.addListener(window, 'keydown', obj.keydown, obj);
+		obj.addListener(window, 'keyup', obj.keyup, obj);
 	}
 	addListener(domElement, events, func, obj){
 		var x = function(event){
